@@ -11,6 +11,7 @@ class Home extends Component {
   };
 
   componentDidMount() {
+    console.log("Home Componet")
     fetch('http://127.0.0.1:8000/tmu/get_all_stocks')
       .then(response => response.json())
       .then((data)=>{
@@ -24,19 +25,20 @@ class Home extends Component {
   render() {
     const { data,columns } = this.state;
     return (
-      <div className="App">
+      <div className="Home">
         <div className="container">
-          <BrowserRouter>
+          <h1>ATS Application</h1>
+          <hr></hr>
+
             <Link to="/asset-management" className="box">Asset Management</Link>
             <Link to="/investment-management" className="box">Investment Management</Link>
             <Link to="/expense-management" className="box">Expense Management</Link>
             <Link to="/trade-management" className="box">Trade Management</Link>
             <Link to="/algorithm-management" className="box">Algorithm Management</Link>
             <Link to="/stock-management" className="box">Stock Management</Link>
-          </BrowserRouter>
+
         </div>
-        {/* <h3>NSE Listed Securites</h3> */}
-        {/* <hr></hr> */}
+
         {/* <TradeSession></TradeSession> */}
         {/* <GenericTable data={data} columns={columns} /> */}
       </div>
