@@ -8,7 +8,7 @@ class TradeSession extends Component {
   }
 
   componentDidMount() {
-    this.ws = new WebSocketClient('ws://127.0.0.1:8000/tmu/market');
+    this.ws = new WebSocketClient('ws://127.0.0.1:8000/ws/test/');
 
     this.ws.onopen = () => {
       console.log('WebSocket connection established.');

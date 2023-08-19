@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import GenericTable from '../table/table';
 import TradeSession from '../TradeSession/trade_session';
+import { Link,BrowserRouter } from 'react-router-dom';
+import './home.scss';
 
 class Home extends Component {
   state = {
@@ -23,10 +25,20 @@ class Home extends Component {
     const { data,columns } = this.state;
     return (
       <div className="App">
-        <h3>NSE Listed Securites</h3>
-        <hr></hr>
-        <TradeSession></TradeSession>
-        <GenericTable data={data} columns={columns} />
+        <div className="container">
+          <BrowserRouter>
+            <Link to="/asset-management" className="box">Asset Management</Link>
+            <Link to="/investment-management" className="box">Investment Management</Link>
+            <Link to="/expense-management" className="box">Expense Management</Link>
+            <Link to="/trade-management" className="box">Trade Management</Link>
+            <Link to="/algorithm-management" className="box">Algorithm Management</Link>
+            <Link to="/stock-management" className="box">Stock Management</Link>
+          </BrowserRouter>
+        </div>
+        {/* <h3>NSE Listed Securites</h3> */}
+        {/* <hr></hr> */}
+        {/* <TradeSession></TradeSession> */}
+        {/* <GenericTable data={data} columns={columns} /> */}
       </div>
     );
   }
