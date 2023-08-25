@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import GenericTable from '../table/table';
-import TradeSession from '../TradeSession/trade_session';
+import TradeSession from '../TradeManagement/TradeSession/trade_session';
 import { Link,BrowserRouter } from 'react-router-dom';
 import './home.scss';
 
@@ -21,8 +21,6 @@ class Home extends Component {
             <Link to="/stock-management" className="box">Stock Management</Link>
 
         </div>
-
-        {/* <TradeSession></TradeSession> */}
       </div>
     );
   }

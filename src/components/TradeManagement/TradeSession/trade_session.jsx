@@ -5,6 +5,9 @@ class TradeSession extends Component {
   constructor(props) {
     super(props);
     this.ws = null;
+    this.state = {
+      price:0
+    }
   }
 
   componentDidMount() {
@@ -16,6 +19,9 @@ class TradeSession extends Component {
 
     this.ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      console.log(data)
+
+      this.setState({"price":data.price})
       // Handle received market update data and update UI or trigger trade actions.
     };
   }
@@ -28,7 +34,9 @@ class TradeSession extends Component {
 
   render() {
     return (
-        <div>This is Trade Sesion</div>
+        <div>This is Trade Sesion 
+          <h3>Current Price :  {this.state.price} </h3>
+        </div>
     );
   }
 }
