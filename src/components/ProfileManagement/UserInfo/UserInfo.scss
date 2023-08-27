@@ -1,0 +1,12 @@
+.userInfoDiv{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; // Adjust this value as needed
+    .userInfo{
+        width: auto;
+        img{
+            width: 20%;
+        }
+    }
+}

@@ -1,0 +1,23 @@
+.profile-management {
+    label {
+        font-size: 1.2em;
+        color: #333;
+    }
+
+    .ui.input {
+        margin-top: 10px;
+        margin-bottom: 20px;
+
+        input {
+            border-radius: 15px;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+    }
+
+    .ui.button {
+        background-color: #2185d0;
+        color: #fff;
+        border-radius: 15px;
+    }
+}
