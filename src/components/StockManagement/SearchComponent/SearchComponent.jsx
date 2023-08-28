@@ -41,6 +41,13 @@ class SearchComponent extends React.Component {
     }
   };
 
+  handleDeleteClick = (keyToDelete) => {
+    const { keyValuePairs } = this.state;
+    const newKeyValuePairs = { ...keyValuePairs };
+    delete newKeyValuePairs[keyToDelete];
+    this.setState({ keyValuePairs: newKeyValuePairs });
+  };
+
   render() {
     const { key, value, keyValuePairs, error } = this.state;
     return (
@@ -50,6 +57,9 @@ class SearchComponent extends React.Component {
             <div className="card" key={key}>
               <div><strong>Key:</strong> {key}</div>
               <div><strong>Value:</strong> {value}</div>
+              <button className="delete-button" onClick={() => this.handleDeleteClick(key)}>
+                <Icon name="close" />
+              </button>
             </div>
           ))}
         </div>
