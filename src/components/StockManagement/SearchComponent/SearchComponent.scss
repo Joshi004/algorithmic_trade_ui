@@ -18,15 +18,26 @@
 
   .card {
     position: relative;
-    padding: 20px;
+    padding: 15px;
     border: 1px solid #ccc;
     border-radius: 5px;
+
+    &.highlight {
+      animation-name: highlight;
+      animation-duration: 2s;
+      animation-fill-mode: forwards;
+      
+      @keyframes highlight {
+        from { background-color: #ff0000; }
+        to { background-color: transparent; }
+      }
+    }
 
     .delete-button {
       position: absolute;
       top: 0;
       right: 0;
-      padding: 2px;
+      padding: 0px;
       border-radius: 30%;
       border: none;
       background-color: #007bff;

@@ -11,6 +11,7 @@ class SearchComponent extends React.Component {
       key: '',
       value: '',
       error: null,
+      duplicateKey: null,
     };
     this.keyOptions = ['Option1', 'Option2', 'Option3'].map(option => ({ value: option, label: option })); // predefined list of keys
   }
@@ -29,15 +30,18 @@ class SearchComponent extends React.Component {
 
   handleAddClick = () => {
     const { key, value, keyValuePairs } = this.state;
-    if (key && value && !keyValuePairs[key]) {
-      this.setState({
-        keyValuePairs: { ...keyValuePairs, [key]: value },
-        key: '',
-        value: '',
-        error: null,
-      });
-    } else {
-      this.setState({ error: 'Invalid or duplicate key-value pair' });
+    if (key && value) {
+      if (!keyValuePairs[key]) {
+        this.setState({
+          keyValuePairs: { ...keyValuePairs, [key]: value },
+          key: '',
+          value: '',
+          error: null,
+          duplicateKey: null,
+        });
+      } else {
+        this.setState({ error: 'Invalid or duplicate key-value pair', duplicateKey: key });
+      }
     }
   };
 
@@ -49,12 +53,12 @@ class SearchComponent extends React.Component {
   };
 
   render() {
-    const { key, value, keyValuePairs, error } = this.state;
+    const { key, value, keyValuePairs, error, duplicateKey } = this.state;
     return (
       <div className="search-component">
         <div className="cards-container">
           {Object.entries(keyValuePairs).map(([key, value]) => (
-            <div className="card" key={key}>
+            <div className={`card ${duplicateKey === key ? 'highlight' : ''}`} key={key}>
               <div><strong>Key:</strong> {key}</div>
               <div><strong>Value:</strong> {value}</div>
               <button className="delete-button" onClick={() => this.handleDeleteClick(key)}>
