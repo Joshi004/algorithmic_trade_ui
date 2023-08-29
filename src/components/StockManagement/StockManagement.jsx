@@ -5,6 +5,7 @@ import { Button } from 'semantic-ui-react';
 import GenericTable from '../table/table';
 import './StockManagement.scss'; // Import the SCSS file here
 import SearchComponent from './SearchComponent/SearchComponent';
+import Loader from '../Common/Loader/Loader';
 
 class StockManagement extends Component {
   constructor(props) {
@@ -12,24 +13,57 @@ class StockManagement extends Component {
     this.state = {
         data: [],
         columns : [],
-        lastUpdate: localStorage.getItem('lastUpdate') || 'Never'
+        lastUpdate: localStorage.getItem('lastUpdate') || 'Never',
+        fetchingInstruments : false
      };
+     this.keys = [
+      'instrument_token',
+      'exchange_token',
+      'trading_symbol',
+      'name',
+      'last_price',
+      'expiry',
+      'strike',
+      'tick_size',
+      'lot_size',
+      'instrument_type',
+      'segment',
+      'exchange'
+    ];
+
      this.updateInstruments = this.updateInstruments.bind(this);
   }
 
 
 
-  componentDidMount() {
-    console.log("Home Componet")
-    fetch('http://127.0.0.1:8000/tmu/get_instruments?exchange=nse')
+  handleSearch = (keyValuePair={}) => {
+    this.setState({fetchingInstruments:true})
+    let searchParams = this.getSearchString(keyValuePair)
+    let url = 'http://127.0.0.1:8000/tmu/get_instruments?' + searchParams
+    fetch(url)
       .then(response => response.json())
-      .then((data)=>{
-        data= data.map(data=> data.fields)
+      .then((res_data) => {
+        console.log("res_data",res_data)
+        let data = res_data.data.map(data => data.fields)
         let columns = Object.keys(data[0])
-        console.log("response fetched ",data)
-        this.setState({ data,columns })
+        console.log("data", data)
+        this.setState({ data, columns, fetchingInstruments:false })
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        this.setState({fetchingInstruments:false})
       });
   }
+  
+
+
+  getSearchString = (parametersObject) =>{
+    let searchString = Object.keys(parametersObject)
+      .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(parametersObject[key]))
+      .join('&');
+    return searchString
+  };
+  
 
   updateInstruments() {
     fetch('http://127.0.0.1:8000/tmu/update_instruments')
@@ -53,14 +87,24 @@ class StockManagement extends Component {
 
   render() {
     const { data,columns,lastUpdate } = this.state;
+    const searchProps = {
+      defaultSelection : {
+        exchange : "nse",
+        instrument_type : "eq",
+      },
+      handleSearch: this.handleSearch,
+      keys:this.keys,
+      header : "Instrument Filter",
+      isLoading : this.state.fetchingInstruments
+    }
     return (
       <div>
         <h1>Stock Management</h1>
         <hr></hr>
         <Button onClick={this.updateInstruments} primary>Update Instruments</Button>
         <p className="update-time">Last updated: {lastUpdate}</p>
-        <SearchComponent></SearchComponent>
-        <GenericTable data={data} columns={columns} />
+        <SearchComponent  {...searchProps} ></SearchComponent>
+         <GenericTable data={data} columns={columns}></GenericTable>
       </div>
     );
   }

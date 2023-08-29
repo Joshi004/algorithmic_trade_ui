@@ -1,4 +1,10 @@
 .search-component {
+  padding-left: 10px;
+  h2 {
+    text-align: left; // Align text to the left
+    margin: 0; // Remove default margin
+    padding-left: 10px;
+  }
   .select-input {
     width: 200px; // adjust this value as needed
   }
@@ -7,20 +13,28 @@
     display: flex;
     gap: 10px;
   }
-
-  .cards-container {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 10px;
-    margin-bottom: 20px;
+  .header-container {
+    display: flex; // Use flex layout
+    align-items: center; // Vertically align items in the middle
+    gap: 20px; // Space between items
+    height: 70px;
+    .cards-container {
+      display: flex; // Use flex layout
+      flex-wrap: nowrap; // Don't wrap items to next line
+      overflow-x: auto; // Enable horizontal scrolling if necessary
+      gap: 10px; // Space between items
+    }
   }
+
 
   .card {
     position: relative;
     padding: 15px;
     border: 1px solid #ccc;
     border-radius: 5px;
+    div {
+      padding-left: 10px;
+    }
 
     &.highlight {
       animation-name: highlight;
@@ -54,7 +68,10 @@
       }
     }
   }
-
+.buttonDiv{
+  height: 40px;
+  width: 40px;
+  display: flex;
   button {
     padding: 5px 10px;
     border-radius: 5px;
@@ -67,6 +84,8 @@
       background-color: #0056b3;
     }
   }
+}
+
 
   // rest of your styles...
 }
