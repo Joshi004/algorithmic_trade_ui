@@ -44,7 +44,7 @@ class StockManagement extends Component {
       .then(response => response.json())
       .then((res_data) => {
         console.log("res_data",res_data)
-        let data = res_data.data.map(data => data.fields)
+        let data = res_data.data
         let columns = Object.keys(data[0])
         console.log("data", data)
         this.setState({ data, columns, fetchingInstruments:false })

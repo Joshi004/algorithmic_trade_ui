@@ -21,6 +21,7 @@ class SearchComponent extends React.Component {
   }
 
   componentDidMount() {
+    console.log("sneindg from did mount ",this.state.keyValuePairs)
     this.props.handleSearch(this.state.keyValuePairs);
   }
 
@@ -52,7 +53,8 @@ class SearchComponent extends React.Component {
             error: null,
             duplicateKey: null,
           },
-          (newKeyValuePair) => {
+          () => {
+            console.log("On Add sending ",newKeyValuePair)
             this.props.handleSearch(newKeyValuePair);
           }
         );
@@ -72,7 +74,8 @@ class SearchComponent extends React.Component {
     delete newKeyValuePairs[keyToDelete]; // Delete the key-value pair with the given key from the copy of keyValuePairs
     this.setState(
       { keyValuePairs: newKeyValuePairs, key: keyToDelete },
-      (newKeyValuePairs) => {
+      () => {
+        console.log("sneindg ",newKeyValuePairs)
         this.props.handleSearch(newKeyValuePairs);
       }
     ); // Update keyValuePairs in state with the modified copy of keyValuePairs

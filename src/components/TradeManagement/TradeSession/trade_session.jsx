@@ -11,7 +11,7 @@ class TradeSession extends Component {
   }
 
   componentDidMount() {
-    this.ws = new WebSocketClient('ws://127.0.0.1:8000/ws/test/');
+    this.ws = new WebSocketClient('ws://127.0.0.1:8000/ws/initiate_trade_session/?trading_symbol=INFY&exchange=nse');
 
     this.ws.onopen = () => {
       console.log('WebSocket connection established.');
@@ -19,7 +19,7 @@ class TradeSession extends Component {
 
     this.ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log(data)
+      console.log("new Price",data)
 
       this.setState({"price":data.price})
       // Handle received market update data and update UI or trigger trade actions.
