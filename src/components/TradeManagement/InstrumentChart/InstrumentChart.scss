@@ -1,0 +1,13 @@
+.container {
+    height: 100vh; /* This makes the container take up the full height of the view */
+    display: flex; /* This makes the children stack horizontally */
+  }
+  
+  .form-container {
+    flex: 1; /* This makes the form container take up 1 part of the available space */
+  }
+  
+  .data-container {
+    flex: 4; /* This makes the data container take up 4 parts of the available space */
+  }
+  
