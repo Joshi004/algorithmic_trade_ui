@@ -1,15 +1,16 @@
 import React from 'react';
 import { Button, Form, Input, Label } from 'semantic-ui-react';
 import './InstrumentChart.scss';
+import CandlestickChart from './MyChart/CandlestickChart';
 
 class InstrumentChrt extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      startDate: '',
-      endDate: '',
-      symbol: '',
-      interval: '',
+      startDate: '2021-08-27',
+      endDate: '2022-08-26',
+      symbol: 'itc',
+      interval: '1',
       data: null,
     };
   }
@@ -24,7 +25,14 @@ class InstrumentChrt extends React.Component {
 
     fetch(url)
       .then(response => response.json())
-      .then(data => this.setState({ data }))
+      .then(data => {
+        const transformedData = data.data.map(item => ({
+          x: new Date(item.date),
+          y: [item.open, item.high, item.low, item.close]
+        }));
+
+        this.setState({ data: [{ data: transformedData }] });
+      })
       .catch(error => console.error('Error:', error));
   }
 
@@ -35,25 +43,25 @@ class InstrumentChrt extends React.Component {
           <Form>
             <Form.Field>
               <Label>Start Date</Label>
-              <Input type="date" name="startDate" onChange={this.handleInputChange} />
+              <Input type="date" name="startDate" value={this.state.startDate} onChange={this.handleInputChange} />
             </Form.Field>
             <Form.Field>
               <Label>End Date</Label>
-              <Input type="date" name="endDate" onChange={this.handleInputChange} />
+              <Input type="date" name="endDate" value={this.state.endDate} onChange={this.handleInputChange} />
             </Form.Field>
             <Form.Field>
               <Label>Symbol</Label>
-              <Input type="text" name="symbol" onChange={this.handleInputChange} />
+              <Input type="text" name="symbol" value={this.state.symbol} onChange={this.handleInputChange} />
             </Form.Field>
             <Form.Field>
               <Label>Interval</Label>
-              <Input type="number" name="interval" onChange={this.handleInputChange} />
+              <Input type="number" name="interval" value={this.state.interval} onChange={this.handleInputChange} />
             </Form.Field>
             <Button onClick={this.fetchData}>Get Data</Button>
           </Form>
         </div>
         <div className="data-container">
-          {/* Display the fetched data here */}
+          {this.state.data?.length ? <CandlestickChart symbol = {this.state.symbol} series={this.state.data}></CandlestickChart>: null}
         </div>
       </div>
     );
