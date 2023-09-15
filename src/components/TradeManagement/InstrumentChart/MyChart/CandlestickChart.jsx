@@ -23,12 +23,13 @@ class CandlestickChart extends React.Component {
         annotations: {
           xaxis: [
             {
-              x: new Date('2022-04-01 T00:00:00'),
+              x: new Date('2022-07-01').getTime(),
+              x2: new Date('2022-07-18').getTime(),
               borderColor: '#black',
               label: {
                 borderColor: '#00E396',
                 style: {
-                  color: '#aaa',
+                  color: 'red',
                   background: '#00E396',
                 },
                 text: 'X annotation',
@@ -38,6 +39,7 @@ class CandlestickChart extends React.Component {
           yaxis: [
             {
               y: 250,
+              y2:280,
               borderColor: '#00E396',
               label: {
                 borderColor: '#00E396',
