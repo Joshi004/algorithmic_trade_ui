@@ -2,6 +2,7 @@ import React from 'react';
 import { Button, Form, Input, Label } from 'semantic-ui-react';
 import './InstrumentChart.scss';
 import CandlestickChart from './MyChart/CandlestickChart';
+import { InstrumentChartHelper } from './InstrumentChartHelper';
 
 class InstrumentChrt extends React.Component {
   constructor(props) {
@@ -9,7 +10,7 @@ class InstrumentChrt extends React.Component {
     this.state = {
       startDate: '2021-08-27',
       endDate: '2022-08-26',
-      symbol: 'itc',
+      symbol: 'yesbank',
       interval: '1',
       data: null,
     };
@@ -19,24 +20,36 @@ class InstrumentChrt extends React.Component {
     this.setState({ [name]: value });
   }
 
+
   fetchData = () => {
     const { startDate, endDate, symbol, interval } = this.state;
-    const url = `http://127.0.0.1:8000/tmu/fetch_historical_data?start_date=${startDate}&end_date=${endDate}&symbol=${symbol}&interval=${interval}`;
-
+    // const url = `http://127.0.0.1:8000/tmu/fetch_historical_data?start_date=${startDate}&end_date=${endDate}&symbol=${symbol}&interval=${interval}`;
+    const url =  `http://127.0.0.1:8000/tmu/get_udts_eligibility?symbol=${symbol}&trade_frequency=day`
     fetch(url)
       .then(response => response.json())
       .then(data => {
-        const transformedData = data.data.map(item => ({
+        const transformedData = data.data.price_list.map(item => ({
           x: new Date(item.date),
           y: [item.open, item.high, item.low, item.close]
         }));
 
-        this.setState({ data: [{ data: transformedData }] });
+        this.setState({ data: [{ data: transformedData }],
+            deflectionPoints : data.data.deflection_points,
+            upScope :  data.data.up_scope,
+            downScope :  data.data.down_scope,
+            tradingPair : data.data.trading_pair,
+            marketPrice : data.data.market_price,
+            options: InstrumentChartHelper.getChartOptions(data.data,data.meta)
+        });
       })
       .catch(error => console.error('Error:', error));
   }
 
   render() {
+    const candStickProps = {
+        series : this.state.data,
+        options : this.state.options
+    }
     return (
       <div className="container">
         <div className="form-container">
@@ -61,7 +74,7 @@ class InstrumentChrt extends React.Component {
           </Form>
         </div>
         <div className="data-container">
-          {this.state.data?.length ? <CandlestickChart symbol = {this.state.symbol} series={this.state.data}></CandlestickChart>: null}
+          {this.state.data?.length ? <CandlestickChart {...candStickProps} ></CandlestickChart>: null}
         </div>
       </div>
     );
