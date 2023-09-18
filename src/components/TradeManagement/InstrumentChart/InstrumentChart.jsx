@@ -46,6 +46,10 @@ class InstrumentChrt extends React.Component {
       .catch(error => console.error('Error:', error));
   }
 
+  handleInstrumentSelect = (e,selection)=>{
+    console.log("In Parent",e,selection)
+  }
+
   render() {
     const candStickProps = {
         series : this.state.data,
@@ -54,8 +58,8 @@ class InstrumentChrt extends React.Component {
     return (
       <div className="container">
 
+        <InstrumentSearchComponent allowMultiple={false} onSelectionChange={this.handleInstrumentSelect}></InstrumentSearchComponent>
         <div className="form-container">
-        <InstrumentSearchComponent></InstrumentSearchComponent>
           <Form>
             <Form.Field>
               <Label>Start Date</Label>
