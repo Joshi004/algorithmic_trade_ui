@@ -106,7 +106,7 @@ class InstrumentSearchComponent extends React.Component {
         loading={loading}
         options={options}
         value={allowMultiple ? value : (selectedOption ? selectedOption.value : '')}
-        placeholder='Search Trading Instruments'
+        placeholder='Search Trade Instrument'
         onChange={this.handleChange}
         onSearchChange={this.handleSearchChange}
         className="custom-dropdown"

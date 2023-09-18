@@ -57,9 +57,8 @@ class InstrumentChrt extends React.Component {
     }
     return (
       <div className="container">
-
-        <InstrumentSearchComponent allowMultiple={false} onSelectionChange={this.handleInstrumentSelect}></InstrumentSearchComponent>
         <div className="form-container">
+        <InstrumentSearchComponent allowMultiple={false} onSelectionChange={this.handleInstrumentSelect}></InstrumentSearchComponent>
           <Form>
             <Form.Field>
               <Label>Start Date</Label>
