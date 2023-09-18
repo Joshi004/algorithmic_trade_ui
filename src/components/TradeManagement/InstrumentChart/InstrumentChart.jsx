@@ -3,6 +3,7 @@ import { Button, Form, Input, Label } from 'semantic-ui-react';
 import './InstrumentChart.scss';
 import CandlestickChart from './MyChart/CandlestickChart';
 import { InstrumentChartHelper } from './InstrumentChartHelper';
+import InstrumentSearchComponent from '../../Common/GenericInstrumentSearch/InstrumentSearch'
 
 class InstrumentChrt extends React.Component {
   constructor(props) {
@@ -52,7 +53,9 @@ class InstrumentChrt extends React.Component {
     }
     return (
       <div className="container">
+
         <div className="form-container">
+        <InstrumentSearchComponent></InstrumentSearchComponent>
           <Form>
             <Form.Field>
               <Label>Start Date</Label>
