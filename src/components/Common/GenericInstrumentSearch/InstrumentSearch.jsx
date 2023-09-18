@@ -70,7 +70,7 @@ class InstrumentSearchComponent extends React.Component {
       .then(data => {
         const options = data.data.map((instrument) => ({
           key: instrument.instrument_token,
-          text: `${instrument.instrument_type} - ${instrument.name} - ${instrument.exchange}`,
+          text: `${instrument.instrument_type} - ${instrument.name} - ${instrument.trading_symbol} ${instrument.exchange}`,
           value: instrument.instrument_token,
           content: (
             <Grid className="custom-dropdown-item" verticalAlign='middle'>
@@ -94,7 +94,7 @@ class InstrumentSearchComponent extends React.Component {
   };
 
   render() {
-    const { options, value, searchQuery, selectedOption, loading } = this.state;
+    const { options, value, selectedOption, loading } = this.state;
     const { allowMultiple } = this.props;
 
     return (
