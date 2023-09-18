@@ -1,0 +1,14 @@
+.custom-dropdown {
+    margin: 5px;
+    border-radius: 5px !important;
+  
+    // Target the input element within the Dropdown
+    .ui.search.dropdown > input.search {
+      border-radius: 5px !important;
+    }
+  }
+  
+  .custom-dropdown-item {
+    border-radius: 5px;
+  }
+  
