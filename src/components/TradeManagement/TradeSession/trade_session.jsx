@@ -11,7 +11,8 @@ class TradeSession extends Component {
   }
 
   componentDidMount() {
-    this.ws = new WebSocketClient('ws://127.0.0.1:8000/ws/initiate_trade_session/?trading_symbol=INFY&exchange=nse&algorithm=just_macd&');
+    console.log("Initiating connection Websocket")
+    this.ws = new WebSocketClient('ws://127.0.0.1:8000/ws/initiate_trade_session/?trading_symbol=INFY&exchange=nse&scanning_algorithm=udts&tracking_algorithm=slto');
 
     this.ws.onopen = () => {
       console.log('WebSocket connection established.');

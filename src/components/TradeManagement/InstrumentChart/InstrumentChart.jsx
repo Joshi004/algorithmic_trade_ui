@@ -25,7 +25,7 @@ class InstrumentChrt extends React.Component {
   fetchData = () => {
     const { startDate, endDate, symbol, interval } = this.state;
     // const url = `http://127.0.0.1:8000/tmu/fetch_historical_data?start_date=${startDate}&end_date=${endDate}&symbol=${symbol}&interval=${interval}`;
-    const url =  `http://127.0.0.1:8000/tmu/get_udts_eligibility?symbol=${symbol}&trade_frequency=day`
+    const url =  `http://127.0.0.1:8000/tmu/get_udts_eligibility?symbol=${symbol}&trade_frequency=15minute`
     fetch(url)
       .then(response => response.json())
       .then(data => {

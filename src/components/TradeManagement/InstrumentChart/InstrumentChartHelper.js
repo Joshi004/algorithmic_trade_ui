@@ -6,7 +6,7 @@ static getChartOptions = (data,meta)=>{
               type: 'candlestick',
             },
             xaxis: {
-              type: 'datetime'
+              type: 'date'
             },
             tooltip: {
               enabled: true,
