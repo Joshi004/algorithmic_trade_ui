@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import GenericTable from '../table/table';
-import TradeSession from '../TradeManagement/TradeSession/trade_session';
+import TradeSession from '../TradeManagement/TradeSession/TradeSession';
 import { Link,BrowserRouter } from 'react-router-dom';
 import './home.scss';
 

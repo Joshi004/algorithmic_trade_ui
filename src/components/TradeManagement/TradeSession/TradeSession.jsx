@@ -1,31 +1,33 @@
-import React, { Component } from 'react';
-import { w3cwebsocket as WebSocketClient } from 'websocket';
+import React, { Component } from "react";
+import { w3cwebsocket as WebSocketClient } from "websocket";
+import { Button, Icon } from "semantic-ui-react";
+import "./TradeSession.scss";
 
 class TradeSession extends Component {
   constructor(props) {
     super(props);
     this.ws = null;
     this.state = {
-      price:0
-    }
+      price: 0,
+    };
   }
 
-  componentDidMount() {
-    console.log("Initiating connection Websocket")
-    this.ws = new WebSocketClient('ws://127.0.0.1:8000/ws/initiate_trade_session/?trading_symbol=INFY&exchange=nse&scanning_algorithm=udts&tracking_algorithm=slto');
+  initiateTradeSession = () => {
+    this.ws = new WebSocketClient(
+      "ws://127.0.0.1:8000/ws/initiate_trade_session/?trading_symbol=INFY&exchange=nse&scanning_algorithm=udts&tracking_algorithm=slto"
+    );
 
     this.ws.onopen = () => {
-      console.log('WebSocket connection established.');
+      console.log("WebSocket connection established.");
     };
 
     this.ws.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      console.log("new Price",data)
+      console.log("new Price", data);
 
-      this.setState({"price":data.price})
-      // Handle received market update data and update UI or trigger trade actions.
+      this.setState({ price: data.price });
     };
-  }
+  };
 
   componentWillUnmount() {
     if (this.ws) {
@@ -35,9 +37,15 @@ class TradeSession extends Component {
 
   render() {
     return (
-        <div>This is Trade Sesion 
-          <h3>Current Price :  {this.state.price} </h3>
-        </div>
+      <div className="trade-session">
+        <Button
+          primary
+          className="init-button"
+          onClick={this.initiateTradeSession}
+        >
+          New Session <Icon name="plus" className="plus-icon" />
+        </Button>
+      </div>
     );
   }
 }
