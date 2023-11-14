@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import { w3cwebsocket as WebSocketClient } from "websocket";
 import { Button, Icon, Modal } from "semantic-ui-react";
 import TradeSessionForm from './TradeSessionForm/TradeSessionForm';
+import TradeSessionGrid from "./TradeSessionGrid/TradeSessionGrid";
 import "./TradeSession.scss";
 
 class TradeSession extends Component {
@@ -11,29 +12,46 @@ class TradeSession extends Component {
     this.state = {
       price: 0,
       modalOpen: false,
+      sessions:[],
+      newSessionId: null,
     };
   }
 
-  initiateCommunicationChannal = () => {
+  componentDidMount() {
+    fetch("http://127.0.0.1:8000/tmu/get_trade_sessions?user_id=1&dummy=1&is_active=1")
+      .then((response) => response.json())
+      .then((data) => this.setState({ sessions: data.data.trade_sessions }));
+  }
+
+  initiateCommunicationChannal = (tradeSessionID) => {
     console.log("Initiate Communication Channal")
-    // this.ws = new WebSocketClient(
-    //   "ws://127.0.0.1:8000/ws/initiate_trade_session/?trading_symbol=INFY&exchange=nse&scanning_algorithm=udts&tracking_algorithm=slto"
-    // );
+    this.ws = new WebSocketClient(
+      `ws://127.0.0.1:8000/ws/setup_trade_session_commnication/?trade_session_id=${tradeSessionID}`
+    );
+    
+    this.ws.onopen = () => {
+      console.log(`Connection Establish for SessionID : ${tradeSessionID}`);
+    };
+    
+    this.ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      this.handleMessage(data)
+   
+    };
+  }
 
-    // this.ws.onopen = () => {
-    //   console.log("WebSocket connection established.");
-    // };
-
-    // this.ws.onmessage = (event) => {
-    //   const data = JSON.parse(event.data);
-    //   console.log("new Price", data);
-
-    //   this.setState({ price: data.price });
-    // };
+  handleMessage = (data)=>{
+      if (data.event_type === "terminate_trade" || data.event_type === "initiate_trade") {
+        const sessionIndex = this.state.sessions.findIndex(session => session.id === data.trade_session_id);
+        let session = {...this.state.sessions[sessionIndex]};
+        session.net_profit += data.net_profit;
+        let sessions = [...this.state.sessions];
+        sessions[sessionIndex] = session;
+        this.setState({ sessions });
+      }
   }
 
   handleOpen = () => this.setState({ modalOpen: true });
-
   handleClose = () => this.setState({ modalOpen: false });
 
   handleFormSubmit = (formData) => {
@@ -44,6 +62,26 @@ class TradeSession extends Component {
     this.initiateTradeSession(formData);
   };
 
+  populateTradeSession = (tradeSessionID)=>{
+    let existing = false
+    this.state.sessions.forEach((session)=>{
+      if (session.id === tradeSessionID){
+        existing = true
+        return
+      } })
+
+      if(existing){
+        this.setState({ newSessionId: tradeSessionID }, () => {
+          // remove the highlight after 5 seconds
+          setTimeout(() => this.setState({ newSessionId: null }), 2000);
+        });
+      }else{
+        fetch(`http://127.0.0.1:8000/tmu/get_trade_sessions?session_id=${tradeSessionID}`)
+        .then((response) => response.json())
+        .then((data) => this.setState({ sessions: [...this.state.sessions, ...data.data.trade_sessions ] }));
+      }
+  }
+
   initiateTradeSession = (formData) => {
     let { scanningAlgorithm, trackingAlgorithm, tradingFrequency, isDummy } = formData;
     isDummy = isDummy ? 1 : 0;
@@ -51,17 +89,17 @@ class TradeSession extends Component {
       `http://127.0.0.1:8000/tmu/initiate_trade_session?trading_frequency=${tradingFrequency}&user_id=1&dummy=${isDummy}&scanning_algorithm_name=${scanningAlgorithm}&tracking_algorithm_name=${trackingAlgorithm}`;
     fetch(url)
       .then((response) => {
-        if (!response.status !== 200) {
+        if (response.status !== 200) {
           throw new Error("Session Could not be initiated");
         }
         return response.json();
       })
       .then((data) => {
-        this.initiateCommunicationChannel();
+        this.populateTradeSession(data.trade_session_id)
+        this.initiateCommunicationChannal(data.trade_session_id);     
       })
   };
   
-
   componentWillUnmount() {
     if (this.ws) {
       this.ws.close();
@@ -77,11 +115,14 @@ class TradeSession extends Component {
           open={modalOpen}
           onClose={this.handleClose}
         >
-          <Modal.Header>Select a Trade Session</Modal.Header>
+          <Modal.Header>Create Trade Session</Modal.Header>
           <Modal.Content>
             <TradeSessionForm onSubmit={this.handleFormSubmit} />
           </Modal.Content>
         </Modal>
+        {<div className="trade-session">
+        <TradeSessionGrid sessions={this.state.sessions} newSessionId={this.state.newSessionId}/>
+      </div>}
       </div>
     );
   }
