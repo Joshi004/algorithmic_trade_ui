@@ -1,48 +1,23 @@
 import React, { Component } from "react";
 import { Card, Popup, Button, Icon } from "semantic-ui-react";
-import "./TradeSessionCard.scss";
+import * as Helper from "./TradeSessionCardHelper";
 
 class TradeSessionCard extends Component {
   renderTradeSessionDetails = () => {
     // Add your logic here to render the trade session details
     console.log("Details for session: ", this.props.session.id);
   };
-  calculateDuration = (started_at, closed_at) => {
-    const startDate = new Date(started_at);
-    const endDate = closed_at ? new Date(closed_at) : new Date();
-    const duration = endDate - startDate;
-    return this.formatDuration(Math.floor(duration / 1000 / 60)); // returns duration in minutes
-  };
-
-  formatDuration = (durationInMinutes) => {
-    const days = Math.floor(durationInMinutes / (60 * 24));
-    const hours = Math.floor((durationInMinutes % (60 * 24)) / 60);
-    const minutes = durationInMinutes % 60;
-    return `${days > 0 ? `${days}d ` : ""}${
-      hours > 0 ? `${hours}h ` : ""
-    }${minutes}m`;
-  };
-
-  formatTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleString("en-US", {
-      hour: "numeric",
-      minute: "numeric",
-      second: "numeric",
-      hour12: true,
-    });
-  };
 
   render() {
     const { session, isNewSession } = this.props;
-    const duration = this.calculateDuration(
+    const duration = Helper.calculateDuration(
       session.started_at,
       session.closed_at
     );
-    const popupContent = `Started at: ${this.formatTime(
+    const popupContent = `Started at: ${Helper.formatTime(
       session.started_at
     )}\nClosed at: ${
-      session.closed_at ? this.formatTime(session.closed_at) : "Still active"
+      session.closed_at ? Helper.formatTime(session.closed_at) : "Still active"
     }`;
     const profitColor =
       session.net_profit > 0
@@ -57,7 +32,7 @@ class TradeSessionCard extends Component {
           <Button animated="vertical" onClick={this.renderTradeSessionDetails}>
             <Button.Content hidden>See All Trdes</Button.Content>
             <Button.Content visible>
-                <span>Details</span> 
+              <span>Details</span>
               <Icon name="shop" />
             </Button.Content>
           </Button>
