@@ -1,6 +1,4 @@
 import React, { Component } from 'react';
-import GenericTable from '../table/table';
-import TradeSession from '../TradeManagement/TradeSession/TradeSession';
 import { Link,BrowserRouter } from 'react-router-dom';
 import './home.scss';
 
@@ -13,16 +11,16 @@ class Home extends Component {
   render() {
     return (
       <div className="Home">
+        <h1>ATS Application</h1>
+        <hr></hr>
         <div className="container">
-          <h1>ATS Application</h1>
-          <hr></hr>
 
-            <Link to="/profile-management" className="box">Profile Management</Link>
-            <Link to="/investment-management" className="box">Investment Management</Link>
-            <Link to="/expense-management" className="box">Expense Management</Link>
-            <Link to="/trade-management" className="box">Trade Management</Link>
-            <Link to="/algorithm-management" className="box">Algorithm Management</Link>
-            <Link to="/stock-management" className="box">Stock Management</Link>
+            <Link to="/profile-management" className="card">Profile Management</Link>
+            <Link to="/investment-management" className="card">Investment Management</Link>
+            <Link to="/expense-management" className="card">Expense Management</Link>
+            <Link to="/trade-management" className="card">Trade Management</Link>
+            <Link to="/algorithm-management" className="card">Algorithm Management</Link>
+            <Link to="/stock-management" className="card">Stock Management</Link>
 
         </div>
       </div>
