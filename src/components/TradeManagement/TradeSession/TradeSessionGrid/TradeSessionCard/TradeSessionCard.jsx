@@ -3,11 +3,6 @@ import { Card, Popup, Button, Icon } from "semantic-ui-react";
 import * as Helper from "./TradeSessionCardHelper";
 
 class TradeSessionCard extends Component {
-  renderTradeSessionDetails = () => {
-    // Add your logic here to render the trade session details
-    console.log("Details for session: ", this.props.session.id);
-  };
-
   render() {
     const { session, isNewSession } = this.props;
     const duration = Helper.calculateDuration(
@@ -29,7 +24,7 @@ class TradeSessionCard extends Component {
     return (
       <div className={cardClass}>
         <Card>
-          <Button animated="vertical" onClick={this.renderTradeSessionDetails}>
+          <Button animated="vertical" onClick={()=>{this.props.handleTradeSessionDetails(session.id)}}>
             <Button.Content hidden>See All Trdes</Button.Content>
             <Button.Content visible>
               <span>Details</span>

@@ -1,9 +1,10 @@
 import React, { Component } from "react";
 import { w3cwebsocket as WebSocketClient } from "websocket";
 import { Button, Icon, Modal } from "semantic-ui-react";
-import TradeSessionForm from './TradeSessionForm/TradeSessionForm';
+import TradeSessionForm from './TradeSessionGrid/TradeSessionForm/TradeSessionForm';
 import TradeSessionGrid from "./TradeSessionGrid/TradeSessionGrid";
 import "./TradeSession.scss";
+import TradeSessionDetail from "./TradeSessionDetail/TradeSessionDetail";
 
 class TradeSession extends Component {
   constructor(props) {
@@ -14,6 +15,7 @@ class TradeSession extends Component {
       modalOpen: false,
       sessions:[],
       newSessionId: null,
+      selectedSessionId : null
     };
   }
 
@@ -40,6 +42,12 @@ class TradeSession extends Component {
     };
   }
 
+  handleTradeSessionDetails = (selectedSessionId)=>{
+    console.log("Selected Trade Session",selectedSessionId)
+    let selectedSessionIndex = this.state.sessions.findIndex(session => session.id === selectedSessionId);
+    this.setState({selectedSessionId,selectedSessionIndex})  
+  }
+
   handleMessage = (data)=>{
       if (data.event_type === "terminate_trade" || data.event_type === "initiate_trade") {
         const sessionIndex = this.state.sessions.findIndex(session => session.id === data.trade_session_id);
@@ -51,13 +59,8 @@ class TradeSession extends Component {
       }
   }
 
-  handleOpen = () => this.setState({ modalOpen: true });
-  handleClose = () => this.setState({ modalOpen: false });
 
   handleFormSubmit = (formData) => {
-    // handle the form data here
-    // you can set it to the state or initiate the trade session
-    console.log(formData);
     this.setState({ modalOpen: false })
     this.initiateTradeSession(formData);
   };
@@ -72,7 +75,6 @@ class TradeSession extends Component {
 
       if(existing){
         this.setState({ newSessionId: tradeSessionID }, () => {
-          // remove the highlight after 5 seconds
           setTimeout(() => this.setState({ newSessionId: null }), 2000);
         });
       }else{
@@ -107,21 +109,13 @@ class TradeSession extends Component {
   }
 
   render() {
-    const { modalOpen } = this.state;
+    const {selectedSessionIndex } = this.state;
     return (
       <div className="trade-session">
-        <Modal
-          trigger={<Button primary className="init-button" onClick={this.handleOpen}>Create New Session <Icon name="plus" className="plus-icon" /></Button>}
-          open={modalOpen}
-          onClose={this.handleClose}
-        >
-          <Modal.Header>Create Trade Session</Modal.Header>
-          <Modal.Content>
-            <TradeSessionForm onSubmit={this.handleFormSubmit} />
-          </Modal.Content>
-        </Modal>
-        {<div className="trade-session">
-        <TradeSessionGrid sessions={this.state.sessions} newSessionId={this.state.newSessionId}/>
+        {this.state.selectedSessionId ? 
+        <TradeSessionDetail sessionInfo={this.state.sessions[selectedSessionIndex]}/> :
+        <div className="trade-session">
+        <TradeSessionGrid handleFormSubmit = {this.handleFormSubmit} sessions={this.state.sessions} newSessionId={this.state.newSessionId} handleTradeSessionDetails = {this.handleTradeSessionDetails}/>
       </div>}
       </div>
     );
