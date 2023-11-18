@@ -16,6 +16,7 @@
     width: 100%;
     padding: 1em;
     cursor: pointer;
+    border-bottom: 1px solid rgb(230, 230, 230);
   
     .instrument-name {
       width: 55%; // Reserve 65% of the space for the instrument name
@@ -49,7 +50,7 @@
     }
   
     &::-webkit-scrollbar-thumb {
-      background: #888;
+      background: #d3d1d1;
       opacity: .5;
     }
   
