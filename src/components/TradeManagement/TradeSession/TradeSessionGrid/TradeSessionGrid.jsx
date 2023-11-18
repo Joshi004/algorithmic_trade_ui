@@ -8,6 +8,10 @@ class TradeSessionGrid extends Component {
     super(props);
     this.state = {modalOpen:false};
   }
+  handleFormSubmit = (formData)=>{
+    this.setState({ modalOpen: false })
+    this.props.handleFormSubmit(formData)
+  }
   handleOpen = () => this.setState({ modalOpen: true });
   handleClose = () => this.setState({ modalOpen: false });
 
@@ -27,7 +31,7 @@ class TradeSessionGrid extends Component {
         >
           <Modal.Header>Create Trade Session</Modal.Header>
           <Modal.Content>
-            <TradeSessionForm onSubmit={this.props.handleFormSubmit} />
+            <TradeSessionForm onSubmit={this.handleFormSubmit} />
           </Modal.Content>
         </Modal>
         {sessions.map((session) => (

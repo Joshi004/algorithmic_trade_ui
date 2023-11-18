@@ -8,7 +8,7 @@ class TradeBar extends Component {
   state = {
     sortKey: null,
     sortDirection: null,
-    selectedTradeId: null
+    selectedTrade: null
   };
 
   onHeaderClick = (key) => {
@@ -20,9 +20,12 @@ class TradeBar extends Component {
     }
   }
 
-  onTradeClick = (trade_id) => {
-    this.setState({ selectedTradeId: trade_id });
-    this.props.handleTradeSelection(trade_id);
+  onTradeClick = (trade) => {
+    if(trade.trade_id !== this.state?.selectedTrade?.trade_id){
+      this.setState({ selectedTrade: trade });
+      this.props.handleTradeSelection(trade);
+    }
+
   }
 
   renderTrade = (trade) => {
@@ -32,10 +35,10 @@ class TradeBar extends Component {
     const isLoss = netProfit < 0;
     const profitColor = isProfit ? 'green' : isLoss ? 'red' : 'grey';
     const arrowDirection = trade_view === 'long' ? 'up' : 'down';
-    const tradeClass = classNames('trade-bar-item', { 'selected': this.state.selectedTradeId === trade_id });
+    const tradeClass = classNames('trade-bar-item', { 'selected': this.state.selectedTrade?.trade_id === trade_id });
   
     return (
-      <div className={tradeClass} onClick={() => this.onTradeClick(trade_id)}>
+      <div className={tradeClass} onClick={() => this.onTradeClick(trade)}>
         <span className="instrument-name" title={instrument_name}>{instrument_name}</span>
         <span className="quantity">
           <Icon name={`arrow ${arrowDirection}`} />

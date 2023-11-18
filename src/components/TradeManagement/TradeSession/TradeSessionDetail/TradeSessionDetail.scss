@@ -1,3 +1,26 @@
 .trade-session-details {
-    padding: 20px;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+
+  .header-container {
+    height: 60px;
   }
+
+  .content {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+
+    .trade-bar-container {
+      width: 20%;
+    }
+
+    .instrument-chart-container {
+      width: 80%;
+    }
+
+
+  }
+
+}
