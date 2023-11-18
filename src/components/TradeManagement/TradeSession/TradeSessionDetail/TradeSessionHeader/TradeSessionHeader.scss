@@ -1,0 +1,24 @@
+.trade-session-header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  color: #4d4d4d;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* Add an ellipsis (...) when text overflows */
+  .header-span {
+    display: inline-block;
+    margin: 0 10px;
+  }
+
+  .description-span {
+    display: inline-block;
+  }
+
+  .meta-span {
+    display: inline-block;
+  }
+}

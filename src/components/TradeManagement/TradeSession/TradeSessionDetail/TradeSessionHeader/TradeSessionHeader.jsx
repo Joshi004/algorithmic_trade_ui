@@ -1,22 +1,35 @@
 import React, { Component } from "react";
-import { Card } from 'semantic-ui-react';
-import './TradeSessionHeader.scss';
+import { Card } from "semantic-ui-react";
+import "./TradeSessionHeader.scss";
 
 class TradeSessionHeader extends Component {
   render() {
-    const { sessionInfo } = this.props;
+    const { sessionInfo, dataPoints } = this.props;
     return (
-      <Card fluid className="trade-session-header">
-        <Card.Content>
-          <Card.Header>
-            Session ID: {sessionInfo.id} | Net Profit: {sessionInfo.net_profit}
-          </Card.Header>
-          <Card.Meta>
-            Started At: {new Date(sessionInfo.started_at).toLocaleString()} | Is Active: {sessionInfo.is_active ? 'Yes' : 'No'}
-          </Card.Meta>
-          <Card.Description>
-            Trading Frequency: {sessionInfo.trading_frequency} | Scanning Algorithm: {sessionInfo.scanning_algorithm_name} | Tracking Algorithm: {sessionInfo.tracking_algorithm_name}
-          </Card.Description>
+      <Card fluid>
+        <Card.Content className="trade-session-header">
+          <span className="header-span">
+            <Card.Header>
+              ID: {sessionInfo.id} | Profit: {sessionInfo.net_profit} | Active:{" "}
+              {sessionInfo.is_active ? "Yes " : "No "}|{" "}
+              {dataPoints?.instrument
+                ? dataPoints["instrument"]["instrument_name"]
+                : null}
+            </Card.Header>
+          </span>
+
+          <span className="description-span">
+            <Card.Description>
+              Frequency: {sessionInfo.trading_frequency} | Scanning:{" "}
+              {sessionInfo.scanning_algorithm_name} | Tracking:{" "}
+              {sessionInfo.tracking_algorithm_name}
+            </Card.Description>
+          </span>
+          <span className="meta-span">
+            <Card.Meta>
+              Started: {new Date(sessionInfo.started_at).toLocaleDateString()}
+            </Card.Meta>
+          </span>
         </Card.Content>
       </Card>
     );

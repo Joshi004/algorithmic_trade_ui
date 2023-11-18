@@ -61,7 +61,6 @@ class TradeSession extends Component {
 
 
   handleFormSubmit = (formData) => {
-    this.setState({ modalOpen: false })
     this.initiateTradeSession(formData);
   };
 
