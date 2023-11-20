@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import TradeSessionHeader from "./TradeSessionHeader/TradeSessionHeader";
+import {getISTDate} from "../../../lib/Utils"
 import TradeBar from "./TradeBar/TradeBar"; // Import the TradeBar component
 import TradeChart from "./TradeChart/TradeChart"; // Import the InstrumentChart component
 import { Loader } from "semantic-ui-react";
@@ -34,6 +35,9 @@ class TradeSessionDetail extends Component {
   };
 
   fetchHistoricalData = (instrumentId, tradeDate) => {
+    if(!instrumentId){
+      return
+    }
     this.setState({ historicalDataLoading: true });
     // Replace the placeholders with the actual values
     const tradeFrequency = this.props.sessionInfo["trading_frequency"];
@@ -44,7 +48,7 @@ class TradeSessionDetail extends Component {
       .then((response) => response.json())
       .then((data) => {
         const transformedData = data.data.map((item) => ({
-          x: new Date(item.date),
+          x: getISTDate(item.date),
           y: [item.open, item.high, item.low, item.close],
         }));
         this.setState({ historicalData: [{ data: transformedData }] });

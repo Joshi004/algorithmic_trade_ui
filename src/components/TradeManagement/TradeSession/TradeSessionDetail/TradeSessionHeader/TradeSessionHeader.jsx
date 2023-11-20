@@ -27,6 +27,9 @@ class TradeSessionHeader extends Component {
           </span>
           <span className="meta-span">
             <Card.Meta>
+            | {dataPoints?.trade_id
+                ? dataPoints["trade_id"]
+                : null} |
               Started: {new Date(sessionInfo.started_at).toLocaleDateString()}
             </Card.Meta>
           </span>

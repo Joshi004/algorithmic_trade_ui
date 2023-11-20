@@ -1,3 +1,4 @@
+import {getISTDate} from "../../../../lib/Utils"
 class TradeChartHelper {
   static getChartOptions = (dataPoints, historicalData) => {
     let datesList =
@@ -305,7 +306,7 @@ class TradeChartHelper {
   };
 
   static getFormatedDate = (value) => {
-    let date = new Date(value);
+    let date = getISTDate(value);
     let month = ("0" + (date.getMonth() + 1)).slice(-2);
     let day = ("0" + date.getDate()).slice(-2);
     let hours = ("0" + date.getHours()).slice(-2);
