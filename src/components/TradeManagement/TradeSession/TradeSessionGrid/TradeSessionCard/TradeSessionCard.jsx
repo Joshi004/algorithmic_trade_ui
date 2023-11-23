@@ -1,8 +1,16 @@
 import React, { Component } from "react";
-import { Card, Popup, Button, Icon } from "semantic-ui-react";
+import { Card, Popup, Button, Icon, Label, Confirm } from "semantic-ui-react";
 import * as Helper from "./TradeSessionCardHelper";
 
 class TradeSessionCard extends Component {
+  state = { open: false };
+
+  show = () => this.setState({ open: true });
+  handleConfirm = () => {
+    this.setState({ open: false });
+    this.props.terminateTradeSession(this.props.session.id);
+  };
+  handleCancel = () => this.setState({ open: false });
   render() {
     const { session, isNewSession } = this.props;
     const duration = Helper.calculateDuration(
@@ -21,16 +29,56 @@ class TradeSessionCard extends Component {
         ? "red"
         : "grey";
     const cardClass = `session-card ${isNewSession ? "new-session" : ""}`;
+    const statusColor =
+      session.status === "active"
+        ? "green"
+        : session.status === "paused"
+        ? "yellow"
+        : "grey";
     return (
       <div className={cardClass}>
         <Card>
-          <Button animated="vertical" onClick={()=>{this.props.handleTradeSessionDetails(session.id)}}>
-            <Button.Content hidden>See All Trdes</Button.Content>
-            <Button.Content visible>
-              <span>Details</span>
-              <Icon name="shop" />
-            </Button.Content>
-          </Button>
+          <Card
+            animated="vertical"
+            color={statusColor}
+            className="status-label"
+          >
+            <Card.Content>
+              <Icon
+                disabled={
+                  session.status === "terminated" || session.status === "active"
+                }
+                name="play circle"
+                className="play-icon"
+                size="large"
+                style={{ float: "left", cursor: "pointer" }}
+                color={statusColor}
+                onClick={() => this.props.resumeTradeSession(session.id)}
+              />
+              <span
+                style={{ cursor: "pointer" }}
+                className="details"
+                onClick={() => {
+                  this.props.handleTradeSessionDetails(session.id);
+                }}
+              >
+                Details
+                <Icon name="shop" />
+              </span>
+              <Icon
+                className="cross-icon"
+                name="close"
+                onClick={this.show}
+                style={{ float: "right", cursor: "pointer" }}
+              />
+              <Confirm
+                open={this.state.open}
+                onCancel={this.handleCancel}
+                onConfirm={this.handleConfirm}
+                content="This will terminate all the trades and this is not a reversible action. Are you sure?"
+              />
+            </Card.Content>
+          </Card>
           <Card.Content>
             <Card.Header>{`Session ID: ${session.id}`}</Card.Header>
             <Popup

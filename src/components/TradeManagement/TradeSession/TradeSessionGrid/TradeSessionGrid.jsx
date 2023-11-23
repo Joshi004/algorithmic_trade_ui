@@ -36,10 +36,12 @@ class TradeSessionGrid extends Component {
         </Modal>
         {sessions.map((session) => (
           <TradeSessionCard
+            terminateTradeSession = {this.props.terminateTradeSession}
             key={session.id}
             session={session}
             isNewSession={session.id === newSessionId}
             handleTradeSessionDetails={this.props.handleTradeSessionDetails}
+            resumeTradeSession = {this.props.resumeTradeSession}
           />
         ))}
       </div>

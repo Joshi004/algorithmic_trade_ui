@@ -5,6 +5,7 @@ import TradeBar from "./TradeBar/TradeBar"; // Import the TradeBar component
 import TradeChart from "./TradeChart/TradeChart"; // Import the InstrumentChart component
 import { Loader } from "semantic-ui-react";
 import "./TradeSessionDetail.scss";
+import {urls} from "../../../constants/urls"
 
 class TradeSessionDetail extends Component {
   state = {
@@ -20,6 +21,12 @@ class TradeSessionDetail extends Component {
     this.fetchTrades();
     this.fetchHistoricalData();
     this.fetchUdtsRecord();
+
+    // setInterval(()=>{
+    //   this.fetchTrades();
+    //   this.fetchHistoricalData();
+    //   this.fetchUdtsRecord();
+    // },15*1000)
   }
 
   fetchTrades = () => {
@@ -35,9 +42,8 @@ class TradeSessionDetail extends Component {
   };
 
   fetchHistoricalData = (instrumentId, tradeDate) => {
-    if(!instrumentId){
-      return
-    }
+    if(!instrumentId) return
+  
     this.setState({ historicalDataLoading: true });
     // Replace the placeholders with the actual values
     const tradeFrequency = this.props.sessionInfo["trading_frequency"];
@@ -58,6 +64,7 @@ class TradeSessionDetail extends Component {
   };
 
   fetchUdtsRecord = (tradeId) => {
+    if(!tradeId) return
     this.setState({ dataPointsLoading: true });
     // Replace the placeholder with the actual value
     fetch(`http://127.0.0.1:8000/tmu/get_udts_redcord?trade_id=${tradeId}`)
