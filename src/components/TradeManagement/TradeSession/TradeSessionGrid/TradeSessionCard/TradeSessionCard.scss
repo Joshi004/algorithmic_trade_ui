@@ -3,21 +3,22 @@
   transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 
 
-  .detail-row{
-    .detail-label{
+  .detail-row {
+    .detail-label {
       // display: inline-block;
       width: 45%;
       text-align: left;
-      float:left;
-  
+      float: left;
+
     }
-   .detail-value{
-    width: 45%;
-    text-align: right;
-    // margin-left: 10px;
-    // display: inline-block;
-    float: right;
-   }  
+
+    .detail-value {
+      width: 45%;
+      text-align: right;
+      // margin-left: 10px;
+      // display: inline-block;
+      float: right;
+    }
   }
 
   .status-label {
@@ -29,30 +30,25 @@
 
     .play-icon {
       // display: inline-block;
-      cursor: pointer; 
+      cursor: pointer;
       float: left;
-      cursor: "pointer" 
+      cursor: "pointer"
 
 
     }
 
-    .details{
+    .details {
       font-size: 16px;
       font-weight: 600;
       cursor: pointer;
     }
 
-    .cross-icon{
+    .cross-icon {
       cursor: pointer;
       float: right;
     }
 
   }
-
-
-
-
-
 
   &.new-session {
     animation: pulse 1s infinite;

@@ -9,9 +9,38 @@ class TradeSessionCard extends Component {
   show = () => this.setState({ open: true });
   handleConfirm = () => {
     this.setState({ open: false });
-    this.props.terminateTradeSession(this.props.session.id);
+    this.terminateTradeSession(this.props.session.id);
   };
   handleCancel = () => this.setState({ open: false });
+
+  terminateTradeSession = (trade_session_id) => {
+    fetch(
+      `http://127.0.0.1:8000/tmu/terminate_trade_session?trade_session_id=${trade_session_id}`
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.data.trade_session_id === trade_session_id) {
+          this.props.updateSession(trade_session_id, "status", "terminated");
+        }
+      });
+  };
+
+  resumeTradeSession = (sessionId) => {
+    const url = `http://127.0.0.1:8000/tmu/resume_trade_session?trade_session_id=${sessionId}`;
+    fetch(url, {
+      method: "GET",
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        // Update the status of the session in the state
+        this.props.updateSession(sessionId, "status", "active");
+      })
+      .catch((error) => {
+        console.error("Error:", error);
+      });
+  };
 
   renderCardHeader = (session) => {
     const statusColor =
@@ -31,7 +60,7 @@ class TradeSessionCard extends Component {
             className="play-icon"
             size="large"
             color={statusColor}
-            onClick={() => this.props.resumeTradeSession(session.id)}
+            onClick={() => this.resumeTradeSession(session.id)}
           />
           <span
             className="details"
@@ -61,8 +90,6 @@ class TradeSessionCard extends Component {
     );
   };
 
-
-
   renderDetailRow = (label, value, color = "black", title) => {
     title = title || value;
     return (
@@ -76,7 +103,7 @@ class TradeSessionCard extends Component {
   };
 
   render() {
-    const { session } = this.props;
+    const { session, isNewSession } = this.props;
     const duration = Helper.calculateDuration(
       session.started_at,
       session.closed_at
@@ -94,8 +121,9 @@ class TradeSessionCard extends Component {
 
     const algoName =
       session.scanning_algorithm_name + " - " + session.tracking_algorithm_name;
+    let blinkClass = isNewSession ? "new-session" : "";
     return (
-      <div className="session-card-component">
+      <div className={"session-card-component " + blinkClass}>
         <Card>
           {this.renderCardHeader(session)}
           <Card.Content>
