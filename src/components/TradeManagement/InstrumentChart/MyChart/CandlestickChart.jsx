@@ -9,8 +9,6 @@ class CandlestickChart extends React.Component {
 
     };
   }
-
- 
   render() {
     return (
       <Chart options={this.props.options} series={this.props.series} type="candlestick"  height={850}  />

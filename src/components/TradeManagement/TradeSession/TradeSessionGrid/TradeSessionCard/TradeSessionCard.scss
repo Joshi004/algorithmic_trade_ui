@@ -1,32 +1,52 @@
-.session-card {
+.session-card-component {
   width: 250px;
   transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 
 
+  .detail-row{
+    .detail-label{
+      // display: inline-block;
+      width: 45%;
+      text-align: left;
+      float:left;
+  
+    }
+   .detail-value{
+    width: 45%;
+    text-align: right;
+    // margin-left: 10px;
+    // display: inline-block;
+    float: right;
+   }  
+  }
 
   .status-label {
     display: inline-block;
     display: flex;
     flex-direction: row;
     justify-content: space-evenly;
-    cursor: default !important;
-
-    .details {
-      display: inline-block;
-      cursor: pointer;
-      width: 80%;
-      cursor: pointer !important;
-    }
+    cursor: default;
 
     .play-icon {
+      // display: inline-block;
+      cursor: pointer; 
+      float: left;
+      cursor: "pointer" 
 
-      display: inline-block;
-      cursor: pointer !important;
+
+    }
+
+    .details{
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
     }
 
     .cross-icon{
-      cursor: pointer !important;
+      cursor: pointer;
+      float: right;
     }
+
   }
 
 
