@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import { Card, Popup, Button, Icon, Label, Confirm } from "semantic-ui-react";
 import * as Helper from "./TradeSessionCardHelper";
 import "./TradeSessionCard.scss";
+import { showPopup } from "../../../../Common/Popup/Popup";
 
 class TradeSessionCard extends Component {
   state = { open: false };
@@ -17,11 +18,50 @@ class TradeSessionCard extends Component {
     fetch(
       `http://127.0.0.1:8000/tmu/terminate_trade_session?trade_session_id=${trade_session_id}`
     )
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.data.trade_session_id === trade_session_id) {
+      .then((response) => {
+        if (response.ok) {
+          showPopup(
+            {
+              title: "Terminated Successfully",
+              message: `Trade Session ${trade_session_id} terminated successfully`,
+            },
+            "positive",
+            5
+          );
           this.props.updateSession(trade_session_id, "status", "terminated");
         }
+        return response.json();
+      })
+      .then((response) => {
+        if (response.status === 202 && response.data.open_trades) {
+          // Handle the case where some trades failed to terminate
+          const openTradesStr = response.data.open_trades
+            .map(
+              (trade) =>
+                `Trade ID: ${trade.id}, Instrument: ${trade.instrument}`
+            )
+            .join(", ");
+          showPopup(
+            {
+              title: "Partial Termination",
+              message: `Trade Session ${trade_session_id} was partially terminated. The following trades could not be terminated: ${openTradesStr}`,
+            },
+            "negative",
+            5
+          );
+        }
+      })
+      .catch((error) => {
+        // Handle fetch errors
+        console.log("Fetch error: ", error);
+        showPopup(
+          {
+            title: "Error",
+            message: `An error occurred while terminating the trade session: ${error.message}`,
+          },
+          "negative",
+          5
+        );
       });
   };
 

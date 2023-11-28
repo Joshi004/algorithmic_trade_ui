@@ -11,7 +11,7 @@ class TradeSession extends Component {
     super(props);
     this.ws = null;
     this.state = {
-      selectedSession: null,
+      selectedSessionId: null,
     };
   }
 
@@ -31,9 +31,9 @@ class TradeSession extends Component {
     };
   };
 
-  updateSelectedSession = (selectedSession) => {
-    console.log("Selected Trade Session", selectedSession);
-    this.setState({ selectedSession });
+  updateselectedSessionId = (selectedSessionId) => {
+    console.log("Selected Trade Session", selectedSessionId);
+    this.setState({ selectedSessionId });
   };
 
   handleMessage = (data) => {
@@ -47,15 +47,15 @@ class TradeSession extends Component {
   }
 
   render() {
-    const { selectedSession } = this.state;
+    const { selectedSessionId } = this.state;
     return (
       <div className="trade-session">
-        {selectedSession ? (
-          <TradeSessionDetail sessionInfo={selectedSession} />
+        {selectedSessionId ? (
+          <TradeSessionDetail tradeSessionID={selectedSessionId} />
         ) : (
           <div className="trade-session">
             <TradeSessionGrid
-              updateSelectedSession={this.updateSelectedSession}
+              updateselectedSession={this.updateselectedSessionId}
             />
           </div>
         )}

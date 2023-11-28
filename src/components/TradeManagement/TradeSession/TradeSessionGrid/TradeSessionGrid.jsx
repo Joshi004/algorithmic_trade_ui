@@ -126,7 +126,7 @@ class TradeSessionGrid extends Component {
               key={session.id}
               session={session}
               isNewSession={session.id === newSessionId}
-              handleTradeSessionDetails={this.props.updateSelectedSession}
+              handleTradeSessionDetails={this.props.updateselectedSession}
               resumeTradeSession={this.props.resumeTradeSession}
               updateSession={this.updateSession}
             />
