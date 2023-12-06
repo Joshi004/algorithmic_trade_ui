@@ -1,33 +1,73 @@
-/* TradeSessionCard.scss */
-@keyframes pulse {
-    0% {
-      transform: scale(1);
-      box-shadow: none;
-    }
-    
-    50% {
-      transform: scale(1.1);
-      box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.3);
-    }
-    
-    100% {
-      transform: scale(1);
-      box-shadow: none;
-    }
-  }
-  
-  .session-card {
-    width: 250px;
-    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+.session-card-component {
+  width: 250px;
+  transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
 
-    .details-button {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-      }
+
+  .detail-row {
+    .detail-label {
+      // display: inline-block;
+      width: 45%;
+      text-align: left;
+      float: left;
+
+    }
+
+    .detail-value {
+      width: 45%;
+      text-align: right;
+      // margin-left: 10px;
+      // display: inline-block;
+      float: right;
+    }
   }
-  
-  .new-session {
+
+  .status-label {
+    display: inline-block;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    cursor: default;
+
+    .play-icon {
+      // display: inline-block;
+      cursor: pointer;
+      float: left;
+      cursor: "pointer"
+
+
+    }
+
+    .details {
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .cross-icon {
+      cursor: pointer;
+      float: right;
+    }
+
+  }
+
+  &.new-session {
     animation: pulse 1s infinite;
   }
-  
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: none;
+  }
+
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  100% {
+    transform: scale(1);
+    box-shadow: none;
+  }
+}

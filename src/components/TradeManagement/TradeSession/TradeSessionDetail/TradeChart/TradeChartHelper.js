@@ -1,4 +1,4 @@
-import {getISTDate} from "../../../../lib/Utils"
+import { getISTDate } from "../../../../lib/Utils";
 class TradeChartHelper {
   static getChartOptions = (dataPoints, historicalData) => {
     let datesList =
@@ -125,7 +125,7 @@ class TradeChartHelper {
         stroke: {
           color: "#b6b6b6",
           width: 1,
-          dashArray:5,
+          dashArray: 5,
         },
       },
       tooltip: {
@@ -138,6 +138,23 @@ class TradeChartHelper {
   static getXaxisAnnotation = (dataPoints, datesList) => {
     let annotation_array = [];
 
+    // Set Trade End time
+    let endDateTime = dataPoints["trade_end_time"];
+    if (endDateTime) {
+      let normalisedEndDate = TradeChartHelper.getNormalisedDate(
+        endDateTime,
+        datesList
+      )
+      let end_time = TradeChartHelper.getFormatedDate(normalisedEndDate);
+      let end_trade_line = TradeChartHelper.getAnoObejectX(
+        end_time,
+        null,
+        "red",
+        "End Time"
+      );
+      annotation_array.push(end_trade_line);
+    }
+
     // Set Trade satrt time
     let startDateTime = dataPoints["trade_start_time"];
     if (startDateTime) {
@@ -145,23 +162,12 @@ class TradeChartHelper {
         startDateTime,
         datesList
       );
-      let time = TradeChartHelper.getFormatedDate(normalisedDate);
+      let start_time = TradeChartHelper.getFormatedDate(normalisedDate);
       let start_trade_line = TradeChartHelper.getAnoObejectX(
-        time,
+        start_time,
         null,
         "green",
         "Start Time"
-      );
-      annotation_array.push(start_trade_line);
-    }
-    // Set Trade End time
-    if (dataPoints["trade_end_time"]) {
-      let time = TradeChartHelper.getFormatedDate(dataPoints["trade_end_time"]);
-      let start_trade_line = TradeChartHelper.getAnoObejectX(
-        time,
-        null,
-        "red",
-        "End Time"
       );
       annotation_array.push(start_trade_line);
     }

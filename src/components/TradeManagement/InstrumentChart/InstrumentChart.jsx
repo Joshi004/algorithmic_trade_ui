@@ -56,34 +56,33 @@ class InstrumentChrt extends React.Component {
         options : this.state.options
     }
     return (
-      // <div className="container">
-      //   <div className="form-container">
-      //   <InstrumentSearchComponent allowMultiple={false} onSelectionChange={this.handleInstrumentSelect}></InstrumentSearchComponent>
-      //     <Form>
-      //       <Form.Field>
-      //         <Label>Start Date</Label>
-      //         <Input type="date" name="startDate" value={this.state.startDate} onChange={this.handleInputChange} />
-      //       </Form.Field>
-      //       <Form.Field>
-      //         <Label>End Date</Label>
-      //         <Input type="date" name="endDate" value={this.state.endDate} onChange={this.handleInputChange} />
-      //       </Form.Field>
-      //       <Form.Field>
-      //         <Label>Symbol</Label>
-      //         <Input type="text" name="symbol" value={this.state.symbol} onChange={this.handleInputChange} />
-      //       </Form.Field>
-      //       <Form.Field>
-      //         <Label>Interval</Label>
-      //         <Input type="number" name="interval" value={this.state.interval} onChange={this.handleInputChange} />
-      //       </Form.Field>
-      //       <Button onClick={this.fetchData}>Get Data</Button>
-      //     </Form>
-      //   </div>
-       
-      // </div>
-       <div>
-       {this.state.data?.length ? <CandlestickChart {...candStickProps} ></CandlestickChart>: null}
-     </div>
+      <div className="container">
+        <div className="form-container">
+        <InstrumentSearchComponent allowMultiple={false} onSelectionChange={this.handleInstrumentSelect}></InstrumentSearchComponent>
+          <Form>
+            <Form.Field>
+              <Label>Start Date</Label>
+              <Input type="date" name="startDate" value={this.state.startDate} onChange={this.handleInputChange} />
+            </Form.Field>
+            <Form.Field>
+              <Label>End Date</Label>
+              <Input type="date" name="endDate" value={this.state.endDate} onChange={this.handleInputChange} />
+            </Form.Field>
+            <Form.Field>
+              <Label>Symbol</Label>
+              <Input type="text" name="symbol" value={this.state.symbol} onChange={this.handleInputChange} />
+            </Form.Field>
+            <Form.Field>
+              <Label>Interval</Label>
+              <Input type="number" name="interval" value={this.state.interval} onChange={this.handleInputChange} />
+            </Form.Field>
+            <Button onClick={this.fetchData}>Get Data</Button>
+          </Form>
+        </div>
+        <div className="data-container">
+          {this.state.data?.length ? <CandlestickChart {...candStickProps} ></CandlestickChart>: null}
+        </div>
+      </div>
     );
   }
 }

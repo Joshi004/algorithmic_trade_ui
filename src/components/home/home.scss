@@ -1,4 +1,13 @@
 .Home {
+    .appheader{
+        text-align: left;
+        font-size: 24px;
+        padding: 5px;
+        margin-left: 20px;
+        font-weight: 800;
+        color: black;
+        padding-top: 20px;
+    }
     .container {
         display: flex;
         flex-wrap: wrap;
@@ -21,14 +30,14 @@
         text-align: center;
         text-decoration: none;
         outline: none;
-        color: #fff;
-        background-color: #0f86e6;
+        color: black;
+        background-color: #c7cdcf;
         border: none;
         border-radius: 15px;
         box-shadow: 0 3px #999;
 
         &:hover {
-            background-color: #104fd6;
+            background-color: #9c9fa6;
         }
 
         &:active {
