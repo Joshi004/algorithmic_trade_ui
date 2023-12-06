@@ -34,8 +34,7 @@ class TradeSessionHeader extends Component {
         <Card.Content className="trade-session-header">
           <span className="header-span">
             <Card.Header>
-              ID: {sessionInfo.id} | Profit: {sessionInfo.net_profit} |
-              {sessionInfo.status}
+              Session ID: {sessionInfo.id} ({sessionInfo.status}) | | 
               {dataPoints?.instrument
                 ? dataPoints["instrument"]["instrument_name"]
                 : null}
@@ -47,14 +46,13 @@ class TradeSessionHeader extends Component {
               <span className="frequencyDDSpan">
                 {this.renderFrequencyDropDown()}
               </span>
-              {sessionInfo.scanning_algorithm_name} | Tracking:{" "}
-              {sessionInfo.tracking_algorithm_name}
+              {sessionInfo.scanning_algorithm_name}-{sessionInfo.tracking_algorithm_name}
             </Card.Description>
           </span>
           <span className="meta-span">
             <Card.Meta>
               | {dataPoints?.trade_id ? dataPoints["trade_id"] : null} |
-              Started: {new Date(sessionInfo.started_at).toLocaleDateString()}
+              Friction {dataPoints?.total_frictional_loss} | Strength(S X R) : {dataPoints?.support_strength} X {dataPoints?.resistance_strength}
             </Card.Meta>
           </span>
         </Card.Content>
