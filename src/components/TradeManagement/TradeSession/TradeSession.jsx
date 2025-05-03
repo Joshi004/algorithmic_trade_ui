@@ -5,6 +5,7 @@ import TradeSessionForm from "./TradeSessionGrid/TradeSessionForm/TradeSessionFo
 import TradeSessionGrid from "./TradeSessionGrid/TradeSessionGrid";
 import "./TradeSession.scss";
 import TradeSessionDetail from "./TradeSessionDetail/TradeSessionDetail";
+import config from "../../../config";
 
 class TradeSession extends Component {
   constructor(props) {
@@ -17,8 +18,10 @@ class TradeSession extends Component {
 
   initiateCommunicationChannal = (tradeSessionID) => {
     console.log("Initiate Communication Channal");
+    // Use baseUrl from config and replace http/https with ws/wss
+    const wsBaseUrl = config.apiBaseUrl.replace(/^http/, 'ws');
     this.ws = new WebSocketClient(
-      `ws://127.0.0.1:8000/ws/setup_trade_session_commnication/?trade_session_id=${tradeSessionID}`
+      `${wsBaseUrl}/ws/setup_trade_session_commnication/?trade_session_id=${tradeSessionID}`
     );
 
     this.ws.onopen = () => {

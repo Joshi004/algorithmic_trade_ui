@@ -3,7 +3,9 @@ import { Button, Form, Input, Label } from 'semantic-ui-react';
 import './InstrumentChart.scss';
 import CandlestickChart from './MyChart/CandlestickChart';
 import { InstrumentChartHelper } from './InstrumentChartHelper';
-import InstrumentSearchComponent from '../../Common/GenericInstrumentSearch/InstrumentSearch'
+import InstrumentSearchComponent from '../../Common/GenericInstrumentSearch/InstrumentSearch';
+import apiService from '../../../services/apiService';
+import ENDPOINTS from '../../../services/endpoints';
 
 class InstrumentChrt extends React.Component {
   constructor(props) {
@@ -21,44 +23,45 @@ class InstrumentChrt extends React.Component {
     this.setState({ [name]: value });
   }
 
-
-  fetchData = () => {
+  fetchData = async () => {
     const { startDate, endDate, symbol, interval } = this.state;
-    // const url = `http://127.0.0.1:8000/tmu/fetch_historical_data?start_date=${startDate}&end_date=${endDate}&symbol=${symbol}&interval=${interval}`;
-    const url =  `http://127.0.0.1:8000/tmu/get_udts_eligibility?symbol=${symbol}&trade_frequency=15minute`
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        const transformedData = data.data.price_list.map(item => ({
-          x: new Date(item.date),
-          y: [item.open, item.high, item.low, item.close]
-        }));
+    
+    try {
+      const url = `${ENDPOINTS.SCANNER_ALGOS.GET_UDTS_ELIGIBILITY}?symbol=${symbol}&trade_frequency=15minute`;
+      const data = await apiService.get(url);
 
-        this.setState({ data: [{ data: transformedData }],
-            deflectionPoints : data.data.deflection_points,
-            upScope :  data.data.up_scope,
-            downScope :  data.data.down_scope,
-            tradingPair : data.data.trading_pair,
-            marketPrice : data.data.market_price,
-            options: InstrumentChartHelper.getChartOptions(data.data,data.meta)
-        });
-      })
-      .catch(error => console.error('Error:', error));
+      const transformedData = data.data.price_list.map(item => ({
+        x: new Date(item.date),
+        y: [item.open, item.high, item.low, item.close]
+      }));
+
+      this.setState({ 
+        data: [{ data: transformedData }],
+        deflectionPoints: data.data.deflection_points,
+        upScope: data.data.up_scope,
+        downScope: data.data.down_scope,
+        tradingPair: data.data.trading_pair,
+        marketPrice: data.data.market_price,
+        options: InstrumentChartHelper.getChartOptions(data.data, data.meta)
+      });
+    } catch (error) {
+      console.error('Error:', error);
+    }
   }
 
-  handleInstrumentSelect = (e,selection)=>{
-    console.log("In Parent",e,selection)
+  handleInstrumentSelect = (e, selection) => {
+    console.log("In Parent", e, selection);
   }
 
   render() {
     const candStickProps = {
-        series : this.state.data,
-        options : this.state.options
+      series: this.state.data,
+      options: this.state.options
     }
     return (
       <div className="container">
         <div className="form-container">
-        <InstrumentSearchComponent allowMultiple={false} onSelectionChange={this.handleInstrumentSelect}></InstrumentSearchComponent>
+          <InstrumentSearchComponent allowMultiple={false} onSelectionChange={this.handleInstrumentSelect}></InstrumentSearchComponent>
           <Form>
             <Form.Field>
               <Label>Start Date</Label>
@@ -80,7 +83,7 @@ class InstrumentChrt extends React.Component {
           </Form>
         </div>
         <div className="data-container">
-          {this.state.data?.length ? <CandlestickChart {...candStickProps} ></CandlestickChart>: null}
+          {this.state.data?.length ? <CandlestickChart {...candStickProps}></CandlestickChart> : null}
         </div>
       </div>
     );

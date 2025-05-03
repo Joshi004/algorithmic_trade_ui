@@ -5,7 +5,8 @@ import TradeBar from "./TradeBar/TradeBar"; // Import the TradeBar component
 import TradeChart from "./TradeChart/TradeChart"; // Import the InstrumentChart component
 import { Loader } from "semantic-ui-react";
 import "./TradeSessionDetail.scss";
-import { urls } from "../../../constants/urls";
+import apiService from "../../../../services/apiService";
+import ENDPOINTS from "../../../../services/endpoints";
 
 class TradeSessionDetail extends Component {
   state = {
@@ -22,91 +23,102 @@ class TradeSessionDetail extends Component {
     this.fetchUdtsRecord();
   }
 
-  fetchTradeSessionsInfo = () => {
-    fetch(
-      `http://127.0.0.1:8000/tmu/get_trade_sessions?user_id=1&dummy=1&session_id=${this.props.tradeSessionID}`
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const sessionInfo = { ...data.data.trade_sessions[0] };
-        this.setState({ sessionInfo,tradeFrequency:sessionInfo["trading_frequency"] }, () => {
-          this.fetchTrades();
-        });
+  fetchTradeSessionsInfo = async () => {
+    try {
+      const { tradeSessionID } = this.props;
+      const url = `${ENDPOINTS.TRADE_SESSIONS.GET_ALL}?user_id=1&dummy=1&session_id=${tradeSessionID}`;
+      const data = await apiService.get(url);
+      
+      const sessionInfo = { ...data.data.trade_sessions[0] };
+      this.setState({ sessionInfo, tradeFrequency: sessionInfo["trading_frequency"] }, () => {
+        this.fetchTrades();
       });
+    } catch (error) {
+      console.error("Error fetching trade session info:", error);
+    }
   };
 
-  fetchTrades = () => {
+  fetchTrades = async () => {
     this.setState({ tradesLoading: true });
-    const { tradeSessionID } = this.props;
-    fetch(
-      `http://127.0.0.1:8000/tmu/get_all_trades_info?trade_session_id=${tradeSessionID}`
-    )
-      .then((response) => response.json())
-      .then((data) =>
-        this.setState({ trades: data.data }, () => {
-          if (this.state.trades.length)
-            this.handleTradeSelection(this.state.trades[0]);
-        })
-      )
-      .catch((error) => console.error("Error:", error))
-      .finally(() => this.setState({ tradesLoading: false }));
+    try {
+      const { tradeSessionID } = this.props;
+      const url = `${ENDPOINTS.TRADES.GET_ALL_TRADES_INFO}?trade_session_id=${tradeSessionID}`;
+      const data = await apiService.get(url);
+      
+      this.setState({ trades: data.data }, () => {
+        if (this.state.trades.length) {
+          this.handleTradeSelection(this.state.trades[0]);
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching trades:", error);
+    } finally {
+      this.setState({ tradesLoading: false });
+    }
   };
 
-  fetchHistoricalData = (instrumentId, tradeDate) => {
+  fetchHistoricalData = async (instrumentId, tradeDate) => {
     if (!instrumentId) return;
 
     this.setState({ historicalDataLoading: true });
-    const tradeFrequency =
-      this.state.tradeFrequency || this.state.sessionInfo["trading_frequency"];
-    const numberOfCandles = 200;
-    fetch(
-      `http://127.0.0.1:8000/tmu/get_historical_data?instrument_id=${instrumentId}&trade_frequency=${tradeFrequency}&number_of_candles=${numberOfCandles}&trade_date=${tradeDate}`
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const transformedData = data.data.map((item) => ({
-          x: getISTDate(item.date),
-          y: [item.open, item.high, item.low, item.close],
-        }));
-        this.setState({ historicalData: [{ data: transformedData }] });
-      })
-      .catch((error) => console.error("Error:", error))
-      .finally(() => this.setState({ historicalDataLoading: false }));
+    try {
+      const tradeFrequency = this.state.tradeFrequency || this.state.sessionInfo["trading_frequency"];
+      const numberOfCandles = 200;
+      const url = `${ENDPOINTS.INSTRUMENTS.GET_HISTORICAL_DATA}?instrument_id=${instrumentId}&trade_frequency=${tradeFrequency}&number_of_candles=${numberOfCandles}&trade_date=${tradeDate}`;
+      
+      const data = await apiService.get(url);
+      
+      const transformedData = data.data.map((item) => ({
+        x: getISTDate(item.date),
+        y: [item.open, item.high, item.low, item.close],
+      }));
+      
+      this.setState({ historicalData: [{ data: transformedData }] });
+    } catch (error) {
+      console.error("Error fetching historical data:", error);
+    } finally {
+      this.setState({ historicalDataLoading: false });
+    }
   };
 
-  fetchUdtsRecord = (tradeId) => {
+  fetchUdtsRecord = async (tradeId) => {
     if (!tradeId) return;
+    
     this.setState({ dataPointsLoading: true });
-    fetch(`http://127.0.0.1:8000/tmu/get_udts_redcord?trade_id=${tradeId}`)
-      .then((response) => response.json())
-      .then((data) => this.setDataPoints(data.data, this.state.selectedTrade))
-      .catch((error) => console.error("Error:", error))
-      .finally(() => this.setState({ dataPointsLoading: false }));
+    try {
+      const url = `${ENDPOINTS.SCANNER_ALGOS.GET_UDTS_RECORD}?trade_id=${tradeId}`;
+      const data = await apiService.get(url);
+      
+      this.setDataPoints(data.data, this.state.selectedTrade);
+    } catch (error) {
+      console.error("Error fetching UDTS record:", error);
+    } finally {
+      this.setState({ dataPointsLoading: false });
+    }
   };
 
-  upadteFreqyency = (value)=>{
+  upadteFreqyency = (value) => {
     let now = new Date();
-      now.setHours(now.getHours() + 5);
-      now.setMinutes(now.getMinutes() + 30);
-      let dateTime = now.toISOString().split(".")[0];
-      let instrumentId = this.state.selectedTrade.instrument["instrument_id"]
-      this.setState({ tradeFrequency: value }, () => {
-      this.fetchHistoricalData(instrumentId,dateTime)
+    now.setHours(now.getHours() + 5);
+    now.setMinutes(now.getMinutes() + 30);
+    let dateTime = now.toISOString().split(".")[0];
+    let instrumentId = this.state.selectedTrade.instrument["instrument_id"];
+    
+    this.setState({ tradeFrequency: value }, () => {
+      this.fetchHistoricalData(instrumentId, dateTime);
     });
   }
-
 
   handleTradeSelection = (trade) => {
     let now = new Date();
     now.setHours(now.getHours() + 5);
     now.setMinutes(now.getMinutes() + 30);
     let dateTime = now.toISOString().split(".")[0]; 
-    this.setState({ selectedTrade: trade },()=>{
+    
+    this.setState({ selectedTrade: trade }, () => {
       this.fetchUdtsRecord(trade["trade_id"]);
       this.fetchHistoricalData(trade["instrument"]["instrument_id"], dateTime);
     });
-    
-
   };
 
   setDataPoints(udtsRecord, trade) {
@@ -138,8 +150,7 @@ class TradeSessionDetail extends Component {
               sessionInfo={sessionInfo}
               dataPoints={dataPoints}
               updateFrequency={this.upadteFreqyency}
-              currentFrequency = {tradeFrequency}
-            
+              currentFrequency={tradeFrequency}
             />
           )}
         </div>

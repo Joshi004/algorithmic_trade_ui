@@ -61,6 +61,43 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/m
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
 
+## API Configuration
+
+The application is configured to connect to different API endpoints based on the environment. By default, it will connect to the local development server at `http://127.0.0.1:18000`.
+
+### Environment Settings
+
+You can customize the API URL by setting environment variables:
+
+1. Create a `.env` file in the root directory with the following content:
+   ```
+   REACT_APP_ENV=development
+   REACT_APP_API_URL=http://your-api-server-url
+   ```
+
+2. For different environments, you can create specific files:
+   - `.env.development` - For development environment
+   - `.env.production` - For production environment
+
+### Environment Options
+
+The application supports three environments:
+
+- `development` (default): Local development environment
+- `testing`: Testing/staging environment
+- `production`: Production environment
+
+### Configuration Files
+
+All API configuration settings can be found in:
+- `src/config.js` - Main configuration file
+- `src/services/apiService.js` - API service for making HTTP requests
+- `src/services/endpoints.js` - Centralized API endpoint definitions
+
+### Adding New API Endpoints
+
+To add new API endpoints, update the `src/services/endpoints.js` file with your new endpoint paths.
+
 ### Deployment
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)

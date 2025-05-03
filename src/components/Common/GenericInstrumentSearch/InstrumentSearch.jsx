@@ -1,6 +1,8 @@
 import React from 'react';
 import { Dropdown, Grid } from 'semantic-ui-react';
 import './InstrumentSearch.scss';
+import apiService from '../../../services/apiService';
+import ENDPOINTS from '../../../services/endpoints';
 
 class InstrumentSearchComponent extends React.Component {
   state = {
@@ -49,48 +51,50 @@ class InstrumentSearchComponent extends React.Component {
     }
   };
 
-  fetchOptions = () => {
+  fetchOptions = async () => {
     this.setState({ loading: true });
 
     const { searchQuery } = this.state;
 
-    const url = new URL('http://127.0.0.1:8000/tmu/get_instruments');
-    const params = {
-      trading_symbol: searchQuery,
-      name: searchQuery,
-      page_length: 5,
-      sort_type: 'asc',
-      page_no: 1,
-      order_by: 'name',
-    };
-    Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
+    try {
+      const params = {
+        trading_symbol: searchQuery,
+        name: searchQuery,
+        page_length: 5,
+        sort_type: 'asc',
+        page_no: 1,
+        order_by: 'name',
+      };
+      
+      // Construct the query string
+      const queryString = Object.keys(params)
+        .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`)
+        .join('&');
+      
+      const data = await apiService.get(`${ENDPOINTS.INSTRUMENTS.GET_ALL}?${queryString}`);
+      
+      const options = data.data.map((instrument) => ({
+        key: instrument.instrument_token,
+        text: `${instrument.instrument_type} - ${instrument.name} - ${instrument.trading_symbol} ${instrument.exchange}`,
+        value: instrument.instrument_token,
+        content: (
+          <Grid className="custom-dropdown-item" verticalAlign='middle'>
+            <Grid.Column floated='left' width={13}>
+              {`${instrument.instrument_type} - ${instrument.name}`}
+            </Grid.Column>
+            <Grid.Column floated='right' width={3}>
+              {instrument.exchange}
+            </Grid.Column>
+          </Grid>
+        ),
+        data: instrument, // Store the entire instrument object in the option
+      }));
 
-    fetch(url)
-      .then(response => response.json())
-      .then(data => {
-        const options = data.data.map((instrument) => ({
-          key: instrument.instrument_token,
-          text: `${instrument.instrument_type} - ${instrument.name} - ${instrument.trading_symbol} ${instrument.exchange}`,
-          value: instrument.instrument_token,
-          content: (
-            <Grid className="custom-dropdown-item" verticalAlign='middle'>
-              <Grid.Column floated='left' width={13}>
-                {`${instrument.instrument_type} - ${instrument.name}`}
-              </Grid.Column>
-              <Grid.Column floated='right' width={3}>
-                {instrument.exchange}
-              </Grid.Column>
-            </Grid>
-          ),
-          data: instrument, // Store the entire instrument object in the option
-        }));
-
-        this.setState({ options, loading: false });
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        this.setState({ loading: false });
-      });
+      this.setState({ options, loading: false });
+    } catch (error) {
+      console.error('Error:', error);
+      this.setState({ loading: false });
+    }
   };
 
   render() {

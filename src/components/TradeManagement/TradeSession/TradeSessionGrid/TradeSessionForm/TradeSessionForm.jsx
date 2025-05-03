@@ -1,5 +1,7 @@
 import React, { Component } from "react";
-import { Form, Dropdown,Button, Checkbox, Message} from "semantic-ui-react";
+import { Form, Dropdown, Button, Checkbox, Message} from "semantic-ui-react";
+import apiService from "../../../../../services/apiService";
+import ENDPOINTS from "../../../../../services/endpoints";
 
 class TradeSessionForm extends Component {
   constructor(props) {
@@ -17,29 +19,34 @@ class TradeSessionForm extends Component {
     };
   }
 
-  componentDidMount() {
-    fetch('http://127.0.0.1:8000/tmu/get_new_session_param_options')
-      .then(response => response.json())
-      .then(data => {
-        const scanningOptions = data.scanning_algorithms.map(algo => ({
-          key: algo.name,
-          value: algo.name,
-          text: algo.display_name,
-          description : algo.description
-        }));
-        const trackingOptions = data.tracking_algorithms.map(algo => ({
-          key: algo.name,
-          value: algo.name,
-          text: algo.display_name,
-          description : algo.description
-        }));
-        const frequencyOptions = data.trading_frequencies.map(freq => ({
-          key: freq,
-          value: freq,
-          text: freq,
-        }));
-        this.setState({ scanningOptions, trackingOptions, frequencyOptions });
-      });
+  async componentDidMount() {
+    try {
+      const data = await apiService.get(ENDPOINTS.TRADE_SESSIONS.GET_PARAMS);
+      
+      const scanningOptions = data.scanning_algorithms.map(algo => ({
+        key: algo.name,
+        value: algo.name,
+        text: algo.display_name,
+        description: algo.description
+      }));
+      
+      const trackingOptions = data.tracking_algorithms.map(algo => ({
+        key: algo.name,
+        value: algo.name,
+        text: algo.display_name,
+        description: algo.description
+      }));
+      
+      const frequencyOptions = data.trading_frequencies.map(freq => ({
+        key: freq,
+        value: freq,
+        text: freq,
+      }));
+      
+      this.setState({ scanningOptions, trackingOptions, frequencyOptions });
+    } catch (error) {
+      console.error("Error fetching session parameters:", error);
+    }
   }
 
   handleChange = (e, { name, value }) => {
@@ -59,7 +66,6 @@ class TradeSessionForm extends Component {
     }
   };
   
-
   handleCheckboxChange = (e, { name, checked }) =>
     this.setState({ [name]: checked });
 
@@ -69,7 +75,17 @@ class TradeSessionForm extends Component {
   };
 
   render() {
-    const { scanningAlgorithm, trackingAlgorithm, tradingFrequency, isDummy, scanningOptions, trackingOptions, frequencyOptions, scanningDescription, trackingDescription } = this.state;
+    const { 
+      scanningAlgorithm, 
+      trackingAlgorithm, 
+      tradingFrequency, 
+      isDummy, 
+      scanningOptions, 
+      trackingOptions, 
+      frequencyOptions, 
+      scanningDescription, 
+      trackingDescription 
+    } = this.state;
 
     return (
       <Form onSubmit={this.handleSubmit}>

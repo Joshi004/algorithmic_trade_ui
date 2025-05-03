@@ -3,6 +3,9 @@ import { Modal, Button, Icon } from "semantic-ui-react";
 import TradeSessionCard from "./TradeSessionCard/TradeSessionCard";
 import TradeSessionForm from "./TradeSessionForm/TradeSessionForm";
 import "./TradeSessionGrid.scss";
+import apiService from "../../../../services/apiService";
+import ENDPOINTS from "../../../../services/endpoints";
+
 class TradeSessionGrid extends Component {
   constructor(props) {
     super(props);
@@ -27,7 +30,7 @@ class TradeSessionGrid extends Component {
     this.setState({ sessions: sessionCopy });
   };
 
-  populateTradeSession = (tradeSessionID) => {
+  populateTradeSession = async (tradeSessionID) => {
     let existing = false;
     Object.values(this.state.sessions).forEach((session) => {
       if (session.id === tradeSessionID) {
@@ -41,47 +44,43 @@ class TradeSessionGrid extends Component {
         setTimeout(() => this.setState({ newSessionId: null }), 2000);
       });
     } else {
-      fetch(
-        `http://127.0.0.1:8000/tmu/get_trade_sessions?session_id=${tradeSessionID}`
-      )
-        .then((response) => response.json())
-        .then((data) =>
-          this.setState({
-            sessions: { ...this.state.sessions, ...data.data.trade_sessions },
-          })
-        );
+      try {
+        const data = await apiService.get(`${ENDPOINTS.TRADE_SESSIONS.GET_ALL}?session_id=${tradeSessionID}`);
+        this.setState({
+          sessions: { ...this.state.sessions, ...data.data.trade_sessions },
+        });
+      } catch (error) {
+        console.error("Error fetching trade session:", error);
+      }
     }
   };
 
-  initiateTradeSession = (formData) => {
-    let { scanningAlgorithm, trackingAlgorithm, tradingFrequency, isDummy } =
-      formData;
-    isDummy = isDummy ? 1 : 0;
-    let url = `http://127.0.0.1:8000/tmu/initiate_trade_session?trading_frequency=${tradingFrequency}&user_id=1&dummy=${isDummy}&scanning_algorithm_name=${scanningAlgorithm}&tracking_algorithm_name=${trackingAlgorithm}`;
-    fetch(url)
-      .then((response) => {
-        if (response.status !== 200) {
-          throw new Error("Session Could not be initiated");
-        }
-        return response.json();
-      })
-      .then((data) => {
-        this.populateTradeSession(data.trade_session_id);
-        this.initiateCommunicationChannal(data.trade_session_id);
-      });
+  initiateTradeSession = async (formData) => {
+    const { scanningAlgorithm, trackingAlgorithm, tradingFrequency, isDummy } = formData;
+    const dummyValue = isDummy ? 1 : 0;
+    
+    try {
+      const url = `${ENDPOINTS.TRADE_SESSIONS.INITIATE}?trading_frequency=${tradingFrequency}&user_id=1&dummy=${dummyValue}&scanning_algorithm_name=${scanningAlgorithm}&tracking_algorithm_name=${trackingAlgorithm}`;
+      const data = await apiService.get(url);
+      this.populateTradeSession(data.trade_session_id);
+      this.initiateCommunicationChannal(data.trade_session_id);
+    } catch (error) {
+      console.error("Error initiating trade session:", error);
+    }
   };
 
-  fetchTradeSessionsInfo = () => {
-    fetch("http://127.0.0.1:8000/tmu/get_trade_sessions?user_id=1&dummy=1")
-      .then((response) => response.json())
-      .then((data) => {
-        const sessions = data.data.trade_sessions;
-        const updatedSessions = sessions.reduce((acc, session) => {
-          acc[session.id] = session;
-          return acc;
-        }, {});
-        this.setState({ sessions: updatedSessions });
-      });
+  fetchTradeSessionsInfo = async () => {
+    try {
+      const data = await apiService.get(`${ENDPOINTS.TRADE_SESSIONS.GET_ALL}?user_id=1&dummy=1`);
+      const sessions = data.data.trade_sessions;
+      const updatedSessions = sessions.reduce((acc, session) => {
+        acc[session.id] = session;
+        return acc;
+      }, {});
+      this.setState({ sessions: updatedSessions });
+    } catch (error) {
+      console.error("Error fetching trade sessions:", error);
+    }
   };
 
   render() {

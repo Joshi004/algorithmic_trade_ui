@@ -3,6 +3,8 @@ import { Card, Popup, Button, Icon, Label, Confirm } from "semantic-ui-react";
 import * as Helper from "./TradeSessionCardHelper";
 import "./TradeSessionCard.scss";
 import { showPopup } from "../../../../Common/Popup/Popup";
+import apiService from "../../../../../services/apiService";
+import ENDPOINTS from "../../../../../services/endpoints";
 
 class TradeSessionCard extends Component {
   state = { open: false };
@@ -14,72 +16,66 @@ class TradeSessionCard extends Component {
   };
   handleCancel = () => this.setState({ open: false });
 
-  terminateTradeSession = (trade_session_id) => {
-    fetch(
-      `http://127.0.0.1:8000/tmu/terminate_trade_session?trade_session_id=${trade_session_id}`
-    )
-      .then((response) => {
-        if (response.ok) {
-          showPopup(
-            {
-              title: "Terminated Successfully",
-              message: `Trade Session ${trade_session_id} terminated successfully`,
-            },
-            "positive",
-            5
-          );
-          this.props.updateSession(trade_session_id, "status", "terminated");
-        }
-        return response.json();
-      })
-      .then((response) => {
-        if (response.status === 202 && response.data.open_trades) {
-          // Handle the case where some trades failed to terminate
-          const openTradesStr = response.data.open_trades
-            .map(
-              (trade) =>
-                `Trade ID: ${trade.id}, Instrument: ${trade.instrument}`
-            )
-            .join(", ");
-          showPopup(
-            {
-              title: "Partial Termination",
-              message: `Trade Session ${trade_session_id} was partially terminated. The following trades could not be terminated: ${openTradesStr}`,
-            },
-            "negative",
-            5
-          );
-        }
-      })
-      .catch((error) => {
-        // Handle fetch errors
-        console.log("Fetch error: ", error);
+  terminateTradeSession = async (trade_session_id) => {
+    try {
+      const url = `${ENDPOINTS.TRADE_SESSIONS.TERMINATE}?trade_session_id=${trade_session_id}`;
+      const response = await fetch(apiService.getApiUrl(url)); // Using fetch directly because we need to check response.ok
+      
+      if (response.ok) {
         showPopup(
           {
-            title: "Error",
-            message: `An error occurred while terminating the trade session: ${error.message}`,
+            title: "Terminated Successfully",
+            message: `Trade Session ${trade_session_id} terminated successfully`,
+          },
+          "positive",
+          5
+        );
+        this.props.updateSession(trade_session_id, "status", "terminated");
+      }
+      
+      const data = await response.json();
+      
+      if (data.status === 202 && data.data.open_trades) {
+        // Handle the case where some trades failed to terminate
+        const openTradesStr = data.data.open_trades
+          .map(
+            (trade) =>
+              `Trade ID: ${trade.id}, Instrument: ${trade.instrument}`
+          )
+          .join(", ");
+        showPopup(
+          {
+            title: "Partial Termination",
+            message: `Trade Session ${trade_session_id} was partially terminated. The following trades could not be terminated: ${openTradesStr}`,
           },
           "negative",
           5
         );
-      });
+      }
+    } catch (error) {
+      // Handle fetch errors
+      console.log("Fetch error: ", error);
+      showPopup(
+        {
+          title: "Error",
+          message: `An error occurred while terminating the trade session: ${error.message}`,
+        },
+        "negative",
+        5
+      );
+    }
   };
 
-  resumeTradeSession = (sessionId) => {
-    const url = `http://127.0.0.1:8000/tmu/resume_trade_session?trade_session_id=${sessionId}`;
-    fetch(url, {
-      method: "GET",
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok");
-        }
-        // Update the status of the session in the state
-        this.props.updateSession(sessionId, "status", "active");
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-      });
+  resumeTradeSession = async (sessionId) => {
+    try {
+      const url = `${ENDPOINTS.TRADE_SESSIONS.RESUME}?trade_session_id=${sessionId}`;
+      const response = await apiService.get(url);
+      
+      // Update the status of the session in the state
+      this.props.updateSession(sessionId, "status", "active");
+    } catch (error) {
+      console.error("Error resuming trade session:", error);
+    }
   };
 
   renderCardHeader = (session) => {
