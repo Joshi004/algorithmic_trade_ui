@@ -13,19 +13,22 @@ const KiteLoginButton = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [needsBrokerSetup, setNeedsBrokerSetup] = useState(false);
   const navigate = useNavigate();
 
   const handleKiteLogin = async () => {
     setLoading(true);
     setError('');
+    setNeedsBrokerSetup(false);
 
     try {
       const result = await kiteService.initiateKiteLogin();
       
       if (!result.success) {
         if (result.error === 'NO_BROKER_CREDENTIALS') {
-          // Redirect to broker registration
-          navigate('/broker-registration');
+          // Show broker setup message instead of immediate redirect
+          setNeedsBrokerSetup(true);
+          setError('You need to register your broker credentials first to connect to Zerodha.');
           return;
         }
         
@@ -44,10 +47,27 @@ const KiteLoginButton = ({
     }
   };
 
+  const handleRegisterBroker = () => {
+    navigate('/broker-registration');
+  };
+
   return (
     <Box>
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert 
+          severity={needsBrokerSetup ? "info" : "error"} 
+          sx={{ mb: 2 }}
+          action={needsBrokerSetup && (
+            <Button 
+              color="inherit" 
+              size="small" 
+              onClick={handleRegisterBroker}
+              sx={{ textTransform: 'none' }}
+            >
+              Register Broker
+            </Button>
+          )}
+        >
           {error}
         </Alert>
       )}

@@ -25,19 +25,29 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      // Simple check - just see if we can access document.cookie
-      // Since we're using HTTP-only cookies, we can't actually read them
-      // But we can assume if we're not being redirected, we might be authenticated
-      // For now, we'll just set loading to false and let the actual API calls handle auth
+      // Conservative approach: Don't make API calls that might trigger redirects
+      // Instead, assume user is not authenticated initially and let them log in
+      // The authentication will be verified when they make their first authenticated request
       
-      // Don't make any API calls here to avoid infinite loops
-      // The actual authentication will be handled by individual API calls
-      setIsAuthenticated(false); // Start as not authenticated
-      setLoading(false);
+      // Check if we're on a public page (login, signup, landing)
+      const publicPaths = ['/login', '/signup', '/'];
+      const currentPath = window.location.pathname;
+      
+      if (publicPaths.includes(currentPath)) {
+        // User is on a public page, start as unauthenticated
+        setIsAuthenticated(false);
+        setUser(null);
+      } else {
+        // User is on a protected page, they might be authenticated
+        // We'll let the API calls in those pages determine the actual auth status
+        // For now, assume they might be authenticated to avoid immediate redirects
+        setIsAuthenticated(true);
+      }
     } catch (error) {
       console.log('Auth check failed:', error.message);
       setIsAuthenticated(false);
       setUser(null);
+    } finally {
       setLoading(false);
     }
   };
@@ -48,6 +58,9 @@ export const AuthProvider = ({ children }) => {
       
       if (response.user) {
         setUser(response.user);
+        setIsAuthenticated(true);
+      } else {
+        // Even if we don't get user details, the login was successful
         setIsAuthenticated(true);
       }
       
@@ -79,7 +92,13 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       setIsAuthenticated(false);
+      // Don't redirect here as apiService.logout() handles it
     }
+  };
+
+  const setAuthenticationFailed = () => {
+    setUser(null);
+    setIsAuthenticated(false);
   };
 
   const value = {
@@ -89,7 +108,8 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-    checkAuthStatus
+    checkAuthStatus,
+    setAuthenticationFailed
   };
 
   return (

@@ -20,12 +20,12 @@ class KiteService {
     } catch (error) {
       console.error('Get login URL error:', error);
       
-      // Check if this is a "no broker credentials" error
-      // The error message might contain the specific error details
-      if (error.message && (
-          error.message.includes('No broker credentials found') ||
-          error.message.includes('NO_BROKER_CREDENTIALS')
-        )) {
+      // Check if this is a "no broker credentials" error using the error code
+      if (error.errorCode === 'NO_BROKER_CREDENTIALS' || 
+          (error.message && (
+            error.message.includes('No broker credentials found') ||
+            error.message.includes('NO_BROKER_CREDENTIALS')
+          ))) {
         return {
           success: false,
           error: 'NO_BROKER_CREDENTIALS',

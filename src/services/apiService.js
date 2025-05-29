@@ -29,6 +29,15 @@ class ApiService {
   }
 
   /**
+   * Log current cookies for debugging
+   */
+  logCookies() {
+    // Note: We can't read HTTP-only cookies in JavaScript, but we can see what's sent
+    console.log('Document cookies (non-HTTP-only only):', document.cookie);
+    console.log('User agent:', navigator.userAgent);
+  }
+
+  /**
    * Process the queue of failed requests after token refresh
    * @param {Error|null} error - Error if refresh failed
    * @param {string|null} token - New token if refresh succeeded
@@ -57,6 +66,8 @@ class ApiService {
     }
 
     this.isRefreshing = true;
+    console.log('Attempting to refresh token...');
+    this.logCookies();
 
     try {
       const response = await fetch(getApiUrl(ENDPOINTS.AUTH.REFRESH_TOKEN), {
@@ -67,21 +78,29 @@ class ApiService {
         }
       });
 
+      console.log('Refresh token response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('Token refresh successful:', data);
         // The new short-lived token is set as a cookie by the server
         this.processQueue(null, 'refreshed');
         return true;
       } else {
-        const error = new Error('Token refresh failed');
+        const errorText = await response.text();
+        console.log('Token refresh failed:', response.status, errorText);
+        const error = new Error(`Token refresh failed: ${response.status}`);
         this.processQueue(error, null);
-        // Automatically redirect to login when refresh fails
-        setTimeout(() => this.redirectToLogin(), 100);
+        // Only redirect on actual token refresh failures, not on individual API failures
+        if (response.status === 401 || response.status === 403) {
+          setTimeout(() => this.redirectToLogin(), 100);
+        }
         return false;
       }
     } catch (error) {
+      console.error('Token refresh network error:', error);
       this.processQueue(error, null);
-      // Automatically redirect to login when refresh fails
+      // Only redirect on network errors during token refresh
       setTimeout(() => this.redirectToLogin(), 100);
       return false;
     } finally {
@@ -97,6 +116,25 @@ class ApiService {
   requiresAuth(endpoint) {
     const publicEndpoints = ['login', 'register'];
     return !publicEndpoints.some(publicEndpoint => endpoint.includes(publicEndpoint));
+  }
+
+  /**
+   * Check if an endpoint is critical for authentication
+   * @param {string} endpoint - The API endpoint
+   * @returns {boolean} - True if this endpoint failure should trigger redirect
+   */
+  isCriticalAuthEndpoint(endpoint) {
+    const criticalEndpoints = ['refresh-token', 'logout'];
+    return criticalEndpoints.some(criticalEndpoint => endpoint.includes(criticalEndpoint));
+  }
+
+  /**
+   * Check if an endpoint is the Kite profile endpoint
+   * @param {string} endpoint - The API endpoint
+   * @returns {boolean} - True if this is the Kite profile endpoint
+   */
+  isKiteProfileEndpoint(endpoint) {
+    return endpoint.includes('get_profile_info');
   }
 
   /**
@@ -148,19 +186,43 @@ class ApiService {
     };
 
     try {
+      console.log(`Making API request to: ${endpoint}`);
+      console.log('Request options:', {
+        method: options.method || 'GET',
+        credentials: requestOptions.credentials,
+        headers: requestOptions.headers
+      });
+      this.logCookies();
+      
       const response = await fetch(getApiUrl(endpoint), requestOptions);
+      console.log(`API response status for ${endpoint}:`, response.status);
       
       // If we get a 401 and this endpoint requires auth, try to refresh token
       if (response.status === 401 && this.requiresAuth(endpoint)) {
+        console.log(`Got 401 for ${endpoint}, attempting token refresh...`);
+        
+        // Special handling for Kite profile endpoint - don't redirect on failure
+        if (this.isKiteProfileEndpoint(endpoint)) {
+          console.log('Kite profile endpoint failed - this is expected if not connected to Zerodha');
+          // Just throw the error, don't try to refresh
+          throw new Error('Kite profile not available - user not connected to Zerodha');
+        }
+        
         const refreshSuccess = await this.refreshToken();
         
         if (refreshSuccess) {
+          console.log(`Token refresh successful, retrying ${endpoint}`);
           // Retry the original request
           const retryResponse = await fetch(getApiUrl(endpoint), requestOptions);
           return await this.handleResponse(retryResponse);
         } else {
-          // Refresh failed - error will be thrown and login redirect already happened
-          throw new Error('Authentication failed - redirecting to login');
+          console.log(`Token refresh failed for ${endpoint}`);
+          // Only redirect if this is a critical auth endpoint or if refresh completely failed
+          if (this.isCriticalAuthEndpoint(endpoint)) {
+            setTimeout(() => this.redirectToLogin(), 100);
+          }
+          // For non-critical endpoints, just throw the error and let the component handle it
+          throw new Error('Authentication failed - please login again');
         }
       }
       
@@ -178,11 +240,19 @@ class ApiService {
    */
   async handleResponse(response) {
     if (!response.ok) {
-      const error = await response.json().catch(() => {
+      const errorData = await response.json().catch(() => {
         return { message: response.statusText };
       });
       
-      throw new Error(error.message || error.error || 'An error occurred while processing the request');
+      // Create an error with the message
+      const errorMessage = errorData.message || errorData.error || 'An error occurred while processing the request';
+      const error = new Error(errorMessage);
+      
+      // Preserve structured error information
+      error.errorCode = errorData.error_code;
+      error.errorData = errorData;
+      
+      throw error;
     }
     
     return await response.json();
@@ -194,6 +264,9 @@ class ApiService {
    * @returns {Promise} - Login response
    */
   async login(credentials) {
+    console.log('Attempting login...');
+    this.logCookies();
+    
     const response = await fetch(getApiUrl(ENDPOINTS.AUTH.LOGIN), {
       method: 'POST',
       credentials: 'include',
@@ -203,6 +276,8 @@ class ApiService {
       body: JSON.stringify(credentials)
     });
 
+    console.log('Login response status:', response.status);
+
     if (!response.ok) {
       const error = await response.json().catch(() => {
         return { message: response.statusText };
@@ -211,6 +286,11 @@ class ApiService {
     }
 
     const data = await response.json();
+    console.log('Login successful:', data);
+    
+    // Log cookies after login (though we can't see HTTP-only ones)
+    console.log('After login - cookies should be set by server');
+    this.logCookies();
     
     // Tokens are stored in HTTP-only cookies by the server
     // The frontend just receives the response with user info

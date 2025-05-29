@@ -1,47 +1,40 @@
-import React, { Component } from "react";
-import { Link, BrowserRouter } from "react-router-dom";
-import bgImage from "../../images/image01.jpeg";
-import "./home.scss";
-import { Icon } from "semantic-ui-react";
+import { Box, CircularProgress } from '@mui/material';
+import React, { useEffect } from 'react';
 
-class Home extends Component {
-  componentDidMount() {
-    console.log("Component Did mount  - Home");
-  }
+import AuthenticatedDashboard from './AuthenticatedDashboard';
+import LandingPage from './LandingPage';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 
-  render() {
+const Home = () => {
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+
+  // Log state changes for debugging
+  useEffect(() => {
+    console.log(`Home component - Auth state: ${isAuthenticated}, Loading: ${loading}, Path: ${location.pathname}`);
+  }, [isAuthenticated, loading, location.pathname]);
+
+  // Show loading spinner while checking authentication
+  if (loading) {
     return (
-      <div style={{ backgroundImage: `url(${bgImage})` }} className="Home">
-        <Link>
-          <div className="appheader">
-            <Icon name="line graph"></Icon>Algorithmic Trading System{" "}
-          </div>
-        </Link>
-        <hr></hr>
-        <div className="container">
-          {/* <img className="bgImage" src={bgImage} alt=""></img> */}
-          <Link to="/profile-management" className="card">
-            Profile Management
-          </Link>
-          <Link to="/investment-management" className="card">
-            Investment Management
-          </Link>
-          <Link to="/expense-management" className="card">
-            Expense Management
-          </Link>
-          <Link to="/trade-management" className="card">
-            Trade Management
-          </Link>
-          <Link to="/algorithm-management" className="card">
-            Algorithm Management
-          </Link>
-          <Link to="/stock-management" className="card">
-            Stock Management
-          </Link>
-        </div>
-      </div>
+      <Box 
+        display="flex" 
+        justifyContent="center" 
+        alignItems="center" 
+        minHeight="100vh"
+      >
+        <CircularProgress size={60} />
+      </Box>
     );
   }
-}
+
+  // Show different components based on authentication status
+  if (isAuthenticated) {
+    return <AuthenticatedDashboard />;
+  } else {
+    return <LandingPage />;
+  }
+};
 
 export default Home;
