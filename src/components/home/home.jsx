@@ -10,10 +10,13 @@ const Home = () => {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
 
+  // Get current authentication status
+  const currentAuthStatus = isAuthenticated();
+
   // Log state changes for debugging
   useEffect(() => {
-    console.log(`Home component - Auth state: ${isAuthenticated}, Loading: ${loading}, Path: ${location.pathname}`);
-  }, [isAuthenticated, loading, location.pathname]);
+    console.log(`Home component - Auth state: ${currentAuthStatus}, Loading: ${loading}, Path: ${location.pathname}`);
+  }, [currentAuthStatus, loading, location.pathname]);
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -30,9 +33,12 @@ const Home = () => {
   }
 
   // Show different components based on authentication status
-  if (isAuthenticated) {
+  console.log('Authentication Status ', currentAuthStatus);
+  if (currentAuthStatus) {
+    console.log('Home: Showing AuthenticatedDashboard');
     return <AuthenticatedDashboard />;
   } else {
+    console.log('Home: Showing LandingPage');
     return <LandingPage />;
   }
 };

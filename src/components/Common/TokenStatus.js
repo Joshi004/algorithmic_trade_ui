@@ -7,8 +7,11 @@ const TokenStatus = ({ show = false, compact = false }) => {
   const { getTokenStatus, isAuthenticated } = useAuth();
   const [tokenStatus, setTokenStatus] = useState({ isExpired: true, timeUntilExpiry: 0 });
 
+  // Get current authentication status
+  const currentAuthStatus = isAuthenticated();
+
   useEffect(() => {
-    if (!show || !isAuthenticated) return;
+    if (!show || !currentAuthStatus) return;
 
     const updateStatus = () => {
       setTokenStatus(getTokenStatus());
@@ -21,9 +24,9 @@ const TokenStatus = ({ show = false, compact = false }) => {
     const interval = setInterval(updateStatus, 1000);
 
     return () => clearInterval(interval);
-  }, [show, isAuthenticated, getTokenStatus]);
+  }, [show, currentAuthStatus, getTokenStatus]);
 
-  if (!show || !isAuthenticated) {
+  if (!show || !currentAuthStatus) {
     return null;
   }
 
@@ -133,8 +136,8 @@ const TokenStatus = ({ show = false, compact = false }) => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2">Auth State:</Typography>
           <Chip 
-            label={isAuthenticated ? 'Authenticated' : 'Not Authenticated'} 
-            color={isAuthenticated ? 'success' : 'error'}
+            label={currentAuthStatus ? 'Authenticated' : 'Not Authenticated'} 
+            color={currentAuthStatus ? 'success' : 'error'}
             size="small"
           />
         </Box>

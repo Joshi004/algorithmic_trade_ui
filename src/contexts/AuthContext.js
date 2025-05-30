@@ -17,7 +17,6 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Set up token manager callbacks
   useEffect(() => {
@@ -26,14 +25,12 @@ export const AuthProvider = ({ children }) => {
       () => {
         console.log('AuthContext: Token expired, logging out user');
         setUser(null);
-        setIsAuthenticated(false);
         tokenManager.stopTokenManagement();
       },
       // onTokenRefreshed callback  
       (tokenInfo) => {
         console.log('AuthContext: Token refreshed proactively', tokenInfo);
-        // Token was refreshed successfully, user remains authenticated
-        // No need to change isAuthenticated as it should already be true
+        // Token was refreshed successfully, session storage is updated automatically
       }
     );
 
@@ -50,33 +47,18 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      // Conservative approach: Check if we have an active token
-      if (tokenManager.isTokenExpired()) {
-        console.log('AuthContext: No valid token found or token expired');
-        setIsAuthenticated(false);
-        setUser(null);
-      } else {
-        // Check if we're on a public page (login, signup, landing)
-        const publicPaths = ['/login', '/signup', '/'];
-        const currentPath = window.location.pathname;
-        
-        if (publicPaths.includes(currentPath)) {
-          // User is on a public page, start as unauthenticated
-          setIsAuthenticated(false);
-          setUser(null);
-        } else {
-          // User is on a protected page and has a valid token
-          // Set as authenticated and let API calls verify actual validity
-          setIsAuthenticated(true);
-        }
-      }
+      // Simply check session storage for authentication status
+      console.log('AuthContext: Checking authentication status from session storage');
     } catch (error) {
       console.log('Auth check failed:', error.message);
-      setIsAuthenticated(false);
-      setUser(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to get current authentication status from session storage
+  const isAuthenticated = () => {
+    return tokenManager.isAuthenticated();
   };
 
   const login = async (credentials) => {
@@ -85,10 +67,6 @@ export const AuthProvider = ({ children }) => {
       
       if (response.user) {
         setUser(response.user);
-        setIsAuthenticated(true);
-      } else {
-        // Even if we don't get user details, the login was successful
-        setIsAuthenticated(true);
       }
 
       // Start proactive token management if token info is available
@@ -101,7 +79,6 @@ export const AuthProvider = ({ children }) => {
       
       return response;
     } catch (error) {
-      setIsAuthenticated(false);
       setUser(null);
       tokenManager.stopTokenManagement();
       throw error;
@@ -127,7 +104,6 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       setUser(null);
-      setIsAuthenticated(false);
       tokenManager.stopTokenManagement();
       // Don't redirect here as apiService.logout() handles it
     }
@@ -135,7 +111,6 @@ export const AuthProvider = ({ children }) => {
 
   const setAuthenticationFailed = () => {
     setUser(null);
-    setIsAuthenticated(false);
     tokenManager.stopTokenManagement();
   };
 
@@ -149,14 +124,14 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
-    isAuthenticated,
+    isAuthenticated, // This is now a function that checks session storage
     loading,
     login,
     register,
     logout,
     checkAuthStatus,
     setAuthenticationFailed,
-    getTokenStatus // Add this for debugging/monitoring
+    getTokenStatus
   };
 
   return (

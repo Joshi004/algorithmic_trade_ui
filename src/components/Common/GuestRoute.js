@@ -23,7 +23,7 @@ const GuestRoute = ({ children, redirectTo = '/home' }) => {
 
   // If authenticated, redirect to home (or specified route)
   // This prevents authenticated users from accessing login/signup pages
-  if (isAuthenticated) {
+  if (isAuthenticated()) {
     return <Navigate to={redirectTo} replace />;
   }
 

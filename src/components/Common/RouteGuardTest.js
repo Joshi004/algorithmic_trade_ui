@@ -8,6 +8,9 @@ const RouteGuardTest = () => {
   const navigate = useNavigate();
   const { isAuthenticated, loading, logout } = useAuth();
 
+  // Get current authentication status
+  const currentAuthStatus = isAuthenticated();
+
   const testRoutes = [
     { path: '/login', label: 'Login (Guest Only)', type: 'guest' },
     { path: '/signup', label: 'Signup (Guest Only)', type: 'guest' },
@@ -55,11 +58,11 @@ const RouteGuardTest = () => {
             Current Authentication Status:
           </Typography>
           <Chip 
-            label={isAuthenticated ? 'Authenticated' : 'Not Authenticated'} 
-            color={isAuthenticated ? 'success' : 'error'}
+            label={currentAuthStatus ? 'Authenticated' : 'Not Authenticated'} 
+            color={currentAuthStatus ? 'success' : 'error'}
             sx={{ mr: 2 }}
           />
-          {isAuthenticated && (
+          {currentAuthStatus && (
             <Button variant="outlined" size="small" onClick={handleLogout}>
               Logout
             </Button>

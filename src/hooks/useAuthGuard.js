@@ -14,12 +14,15 @@ export const useAuthGuard = (requireAuth = true, redirectTo = '/login') => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Get current authentication status
+  const currentAuthStatus = isAuthenticated();
+
   useEffect(() => {
     // Don't do anything while loading
     if (loading) return;
 
     // If authentication is required but user is not authenticated
-    if (requireAuth && !isAuthenticated) {
+    if (requireAuth && !currentAuthStatus) {
       navigate(redirectTo, { 
         state: { from: location },
         replace: true 
@@ -27,15 +30,15 @@ export const useAuthGuard = (requireAuth = true, redirectTo = '/login') => {
     }
 
     // If authentication is not allowed (e.g., login page) but user is authenticated
-    if (!requireAuth && isAuthenticated && redirectTo !== '/login') {
+    if (!requireAuth && currentAuthStatus && redirectTo !== '/login') {
       navigate(redirectTo, { replace: true });
     }
-  }, [isAuthenticated, loading, requireAuth, redirectTo, navigate, location]);
+  }, [currentAuthStatus, loading, requireAuth, redirectTo, navigate, location]);
 
   return {
-    isAuthenticated,
+    isAuthenticated: currentAuthStatus,
     loading,
-    canAccess: loading ? null : requireAuth ? isAuthenticated : !isAuthenticated
+    canAccess: loading ? null : requireAuth ? currentAuthStatus : !currentAuthStatus
   };
 };
 

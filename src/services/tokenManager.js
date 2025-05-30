@@ -3,15 +3,16 @@ import apiService from './apiService';
 /**
  * TokenManager handles proactive token refresh with a 10% safety margin
  * If token expires in 60 seconds, it will refresh after 54 seconds (60 - 6)
+ * Token expiry time is stored in session storage for persistence across page refreshes
  */
 class TokenManager {
   constructor() {
     this.refreshTimeoutId = null;
-    this.tokenExpiryTime = null;
     this.isRefreshing = false;
     this.onTokenExpired = null; // Callback for when token expires
     this.onTokenRefreshed = null; // Callback for when token is refreshed
     this.SAFETY_MARGIN_PERCENT = 10; // 10% safety margin
+    this.SESSION_KEY = 'ats_token_expiry'; // Session storage key
   }
 
   /**
@@ -20,6 +21,39 @@ class TokenManager {
   setCallbacks(onTokenExpired, onTokenRefreshed) {
     this.onTokenExpired = onTokenExpired;
     this.onTokenRefreshed = onTokenRefreshed;
+  }
+
+  /**
+   * Store token expiry time in session storage
+   */
+  setTokenExpiryTime(expiryTime) {
+    sessionStorage.setItem(this.SESSION_KEY, expiryTime.toString());
+  }
+
+  /**
+   * Get token expiry time from session storage
+   */
+  getTokenExpiryTime() {
+    const expiry = sessionStorage.getItem(this.SESSION_KEY);
+    return expiry ? parseInt(expiry, 10) : null;
+  }
+
+  /**
+   * Clear token expiry time from session storage
+   */
+  clearTokenExpiryTime() {
+    sessionStorage.removeItem(this.SESSION_KEY);
+  }
+
+  /**
+   * Check if user is authenticated based on session storage
+   */
+  isAuthenticated() {
+    const expiryTime = this.getTokenExpiryTime();
+    if (!expiryTime) {
+      return false;
+    }
+    return Date.now() < expiryTime;
   }
 
   /**
@@ -41,8 +75,9 @@ class TokenManager {
     const safetyMarginMs = (expiresInMs * this.SAFETY_MARGIN_PERCENT) / 100;
     const refreshAfterMs = expiresInMs - safetyMarginMs;
 
-    // Store the actual expiry time
-    this.tokenExpiryTime = Date.now() + expiresInMs;
+    // Store the actual expiry time in session storage
+    const tokenExpiryTime = Date.now() + expiresInMs;
+    this.setTokenExpiryTime(tokenExpiryTime);
 
     console.log(`TokenManager: SLT expires in ${expiresInMs / 1000} seconds`);
     console.log(`TokenManager: Will refresh after ${refreshAfterMs / 1000} seconds (${this.SAFETY_MARGIN_PERCENT}% margin)`);
@@ -108,7 +143,7 @@ class TokenManager {
   stopTokenManagement() {
     console.log('TokenManager: Stopping SLT management');
     this.clearRefreshTimeout();
-    this.tokenExpiryTime = null;
+    this.clearTokenExpiryTime();
   }
 
   /**
@@ -125,20 +160,22 @@ class TokenManager {
    * Check if token is expired based on stored expiry time
    */
   isTokenExpired() {
-    if (!this.tokenExpiryTime) {
+    const expiryTime = this.getTokenExpiryTime();
+    if (!expiryTime) {
       return true; // No token info means expired
     }
-    return Date.now() >= this.tokenExpiryTime;
+    return Date.now() >= expiryTime;
   }
 
   /**
    * Get time until token expires (in seconds)
    */
   getTimeUntilExpiry() {
-    if (!this.tokenExpiryTime) {
+    const expiryTime = this.getTokenExpiryTime();
+    if (!expiryTime) {
       return 0;
     }
-    const timeLeft = Math.max(0, this.tokenExpiryTime - Date.now());
+    const timeLeft = Math.max(0, expiryTime - Date.now());
     return Math.floor(timeLeft / 1000);
   }
 
