@@ -5,8 +5,10 @@ import { Box, CircularProgress } from '@mui/material';
 import { BrokerRegistration, Login, SignUp } from './components/Auth';
 import { Navigate, Route, BrowserRouter as Router, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 
+import GuestRoute from './components/Common/GuestRoute';
 import { Home } from './components/home';
 import ProfileManagement from './components/ProfileManagement/ProfileManagement';
+import ProtectedRoute from './components/Common/ProtectedRoute';
 import React from 'react';
 import StockManagement from './components/StockManagement/StockManagement';
 import TradeManagement from './components/TradeManagement/TradeManagement';
@@ -39,13 +41,62 @@ function RouteWrapper() {
     
     return (
         <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/broker-registration" element={<BrokerRegistration />} />
+            {/* Guest Only Routes (redirect authenticated users) */}
+            <Route 
+                path="/login" 
+                element={
+                    <GuestRoute>
+                        <Login />
+                    </GuestRoute>
+                } 
+            />
+            <Route 
+                path="/signup" 
+                element={
+                    <GuestRoute>
+                        <SignUp />
+                    </GuestRoute>
+                } 
+            />
+            
+            {/* Public Routes */}
             <Route path="/home" element={<Home />} />
-            <Route path="/stock-management" element={<StockManagement {...defaultProps} />} />
-            <Route path="/trade-management" element={<TradeManagement {...defaultProps} />} />
-            <Route path="/profile-management/*" element={<ProfileManagement {...defaultProps} />} />
+            
+            {/* Protected Routes */}
+            <Route 
+                path="/broker-registration" 
+                element={
+                    <ProtectedRoute>
+                        <BrokerRegistration />
+                    </ProtectedRoute>
+                } 
+            />
+            <Route 
+                path="/stock-management" 
+                element={
+                    <ProtectedRoute>
+                        <StockManagement {...defaultProps} />
+                    </ProtectedRoute>
+                } 
+            />
+            <Route 
+                path="/trade-management" 
+                element={
+                    <ProtectedRoute>
+                        <TradeManagement {...defaultProps} />
+                    </ProtectedRoute>
+                } 
+            />
+            <Route 
+                path="/profile-management/*" 
+                element={
+                    <ProtectedRoute>
+                        <ProfileManagement {...defaultProps} />
+                    </ProtectedRoute>
+                } 
+            />
+            
+            {/* Default Routes */}
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>

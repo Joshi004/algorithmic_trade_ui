@@ -10,7 +10,7 @@ import {
   TextField,
   Typography
 } from '@mui/material';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -23,7 +23,11 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+
+  // Get the intended destination from location state (set by ProtectedRoute)
+  const from = location.state?.from?.pathname || '/home';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -53,8 +57,8 @@ const Login = () => {
       // Call login through auth context
       await login(formData);
       
-      // Login successful - redirect to home page
-      navigate('/home');
+      // Login successful - redirect to intended destination or home
+      navigate(from, { replace: true });
       
     } catch (err) {
       console.error('Login error:', err);

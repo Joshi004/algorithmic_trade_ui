@@ -56,7 +56,7 @@ class ApiService {
 
   /**
    * Refresh the access token using the long-lived token
-   * @returns {Promise<boolean>} - True if refresh succeeded
+   * @returns {Promise<Object|boolean>} - Response data with token_info if refresh succeeded, false if failed
    */
   async refreshToken() {
     if (this.isRefreshing) {
@@ -85,7 +85,7 @@ class ApiService {
         console.log('Token refresh successful:', data);
         // The new short-lived token is set as a cookie by the server
         this.processQueue(null, 'refreshed');
-        return true;
+        return data; // Return the response data with token_info
       } else {
         const errorText = await response.text();
         console.log('Token refresh failed:', response.status, errorText);
@@ -208,9 +208,9 @@ class ApiService {
           throw new Error('Kite profile not available - user not connected to Zerodha');
         }
         
-        const refreshSuccess = await this.refreshToken();
+        const refreshResult = await this.refreshToken();
         
-        if (refreshSuccess) {
+        if (refreshResult && refreshResult !== false) {
           console.log(`Token refresh successful, retrying ${endpoint}`);
           // Retry the original request
           const retryResponse = await fetch(getApiUrl(endpoint), requestOptions);

@@ -33,6 +33,7 @@ import {
 import React, { useEffect, useState } from 'react';
 
 import KiteLoginButton from '../Common/KiteLoginButton';
+import TokenStatus from '../Common/TokenStatus';
 import kiteService from '../../services/kiteService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -302,6 +303,9 @@ const AuthenticatedDashboard = () => {
           </Typography>
           
           <Stack direction="row" alignItems="center" spacing={2}>
+            {/* Compact Token Status in Header Only Show In Dvelopment*/}
+            <TokenStatus show={true} compact={true} />
+            
             <Typography variant="body2" color="text.secondary">
               Welcome, {user?.first_name || user?.email?.split('@')[0] || 'User'}
             </Typography>
