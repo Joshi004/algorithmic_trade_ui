@@ -7,6 +7,7 @@ import { Navigate, Route, BrowserRouter as Router, Routes, useLocation, useNavig
 
 import GuestRoute from './components/Common/GuestRoute';
 import { Home } from './components/home';
+import Layout from './components/Layout/Layout';
 import Profile from './components/Profile/Profile';
 import ProfileManagement from './components/ProfileManagement/ProfileManagement';
 import ProtectedRoute from './components/Common/ProtectedRoute';
@@ -63,12 +64,14 @@ function RouteWrapper() {
             {/* Public Routes */}
             <Route path="/home" element={<Home />} />
             
-            {/* Protected Routes */}
+            {/* Protected Routes with Layout */}
             <Route 
                 path="/broker-registration" 
                 element={
                     <ProtectedRoute>
-                        <BrokerRegistration />
+                        <Layout>
+                            <BrokerRegistration />
+                        </Layout>
                     </ProtectedRoute>
                 } 
             />
@@ -76,7 +79,9 @@ function RouteWrapper() {
                 path="/stock-management" 
                 element={
                     <ProtectedRoute>
-                        <StockManagement {...defaultProps} />
+                        <Layout>
+                            <StockManagement {...defaultProps} />
+                        </Layout>
                     </ProtectedRoute>
                 } 
             />
@@ -84,7 +89,9 @@ function RouteWrapper() {
                 path="/trade-management" 
                 element={
                     <ProtectedRoute>
-                        <TradeManagement {...defaultProps} />
+                        <Layout>
+                            <TradeManagement {...defaultProps} />
+                        </Layout>
                     </ProtectedRoute>
                 } 
             />
@@ -92,7 +99,9 @@ function RouteWrapper() {
                 path="/profile-management/*" 
                 element={
                     <ProtectedRoute>
-                        <ProfileManagement {...defaultProps} />
+                        <Layout>
+                            <ProfileManagement {...defaultProps} />
+                        </Layout>
                     </ProtectedRoute>
                 } 
             />
@@ -100,7 +109,9 @@ function RouteWrapper() {
                 path="/profile" 
                 element={
                     <ProtectedRoute>
-                        <Profile />
+                        <Layout>
+                            <Profile />
+                        </Layout>
                     </ProtectedRoute>
                 } 
             />

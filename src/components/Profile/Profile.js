@@ -1,7 +1,5 @@
 import {
   AccountBalance,
-  AccountCircle,
-  ArrowBack,
   Badge,
   Business,
   CheckCircle,
@@ -15,20 +13,15 @@ import {
 } from '@mui/icons-material';
 import {
   Alert,
-  AppBar,
   Avatar,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
-  Container,
-  Divider,
   Grid,
-  IconButton,
   Paper,
   Stack,
-  Toolbar,
   Typography,
   alpha,
   useTheme
@@ -430,67 +423,27 @@ const Profile = () => {
   );
 
   return (
-    <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Compact Header */}
-      <AppBar 
-        position="static" 
-        elevation={0}
-        sx={{ 
-          bgcolor: 'background.paper',
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`
-        }}
-      >
-        <Toolbar sx={{ py: 1 }}>
-          <IconButton
-            edge="start"
-            color="inherit"
-            onClick={() => navigate('/home')}
-            sx={{ mr: 2 }}
-          >
-            <ArrowBack />
-          </IconButton>
-          
-          <Typography 
-            variant="h6" 
-            component="div" 
-            sx={{ 
-              flexGrow: 1, 
-              fontWeight: 'bold',
-              color: 'primary.main'
-            }}
-          >
-            Profile
-          </Typography>
-          
-          <Typography variant="body2" color="text.secondary">
-            {user?.first_name || user?.email?.split('@')[0] || 'User'}
-          </Typography>
-        </Toolbar>
-      </AppBar>
-
-      {/* Main Content */}
-      <Box sx={{ p: 3 }}>
-        <Grid container spacing={3}>
-          {/* Left Sidebar */}
-          <Grid item xs={12} lg={3}>
-            {renderUserSummaryCard()}
-          </Grid>
-
-          {/* Right Main Content */}
-          <Grid item xs={12} lg={9}>
-            <Stack spacing={3}>
-              {/* Account Details */}
-              {renderAccountDetailsCard()}
-
-              {/* Trading Capabilities */}
-              {renderTradingCapabilitiesCard()}
-
-              {/* Connection Management */}
-              {(kiteConnectionStatus === 'disconnected' || error) && renderConnectionCard()}
-            </Stack>
-          </Grid>
+    <Box sx={{ p: 3 }}>
+      <Grid container spacing={3}>
+        {/* Left Sidebar */}
+        <Grid item xs={12} lg={3}>
+          {renderUserSummaryCard()}
         </Grid>
-      </Box>
+
+        {/* Right Main Content */}
+        <Grid item xs={12} lg={9}>
+          <Stack spacing={3}>
+            {/* Account Details */}
+            {renderAccountDetailsCard()}
+
+            {/* Trading Capabilities */}
+            {renderTradingCapabilitiesCard()}
+
+            {/* Connection Management */}
+            {(kiteConnectionStatus === 'disconnected' || error) && renderConnectionCard()}
+          </Stack>
+        </Grid>
+      </Grid>
     </Box>
   );
 };

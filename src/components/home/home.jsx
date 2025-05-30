@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 
 import AuthenticatedDashboard from './AuthenticatedDashboard';
 import LandingPage from './LandingPage';
+import Layout from '../Layout/Layout';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
 
@@ -36,7 +37,11 @@ const Home = () => {
   console.log('Authentication Status ', currentAuthStatus);
   if (currentAuthStatus) {
     console.log('Home: Showing AuthenticatedDashboard');
-    return <AuthenticatedDashboard />;
+    return (
+      <Layout>
+        <AuthenticatedDashboard />
+      </Layout>
+    );
   } else {
     console.log('Home: Showing LandingPage');
     return <LandingPage />;

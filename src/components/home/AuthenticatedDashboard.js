@@ -1,35 +1,23 @@
 import {
-  AccountBalance,
-  AccountCircle,
-  AutoGraph,
-  CheckCircle,
-  Error,
-  Logout,
-  TrendingUp
-} from '@mui/icons-material';
-import {
-  AppBar,
-  Avatar,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
   Container,
-  Divider,
   Grid,
-  IconButton,
-  Menu,
-  MenuItem,
   Stack,
-  Toolbar,
   Typography,
   alpha,
   useTheme
 } from '@mui/material';
+import {
+  CheckCircle,
+  Error,
+  TrendingUp
+} from '@mui/icons-material';
 import React, { useEffect, useState } from 'react';
 
-import TokenStatus from '../Common/TokenStatus';
 import kiteService from '../../services/kiteService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -37,8 +25,7 @@ import { useNavigate } from 'react-router-dom';
 const AuthenticatedDashboard = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { user, logout, setAuthenticationFailed } = useAuth();
-  const [anchorEl, setAnchorEl] = useState(null);
+  const { setAuthenticationFailed } = useAuth();
   const [kiteConnectionStatus, setKiteConnectionStatus] = useState('unknown');
 
   // Check Kite connection status on mount
@@ -65,99 +52,8 @@ const AuthenticatedDashboard = () => {
     }
   };
 
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleProfileClick = () => {
-    handleMenuClose();
-    navigate('/profile');
-  };
-
-  const handleLogout = async () => {
-    handleMenuClose();
-    await logout();
-  };
-
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: 'background.default' }}>
-      {/* Header */}
-      <AppBar 
-        position="static" 
-        elevation={0}
-        sx={{ 
-          bgcolor: 'background.paper',
-          borderBottom: `1px solid ${alpha(theme.palette.divider, 0.12)}`
-        }}
-      >
-        <Toolbar>
-          <Typography 
-            variant="h6" 
-            component="div" 
-            sx={{ 
-              flexGrow: 1, 
-              fontWeight: 'bold',
-              color: 'primary.main'
-            }}
-          >
-            <AutoGraph sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Algorithmic Trading System
-          </Typography>
-          
-          <Stack direction="row" alignItems="center" spacing={2}>
-            {/* Compact Token Status in Header Only Show In Development*/}
-            <TokenStatus show={true} compact={true} />
-            
-            <Typography variant="body2" color="text.secondary">
-              Welcome, {user?.first_name || user?.email?.split('@')[0] || 'User'}
-            </Typography>
-            <IconButton
-              size="large"
-              edge="end"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleMenuOpen}
-              color="inherit"
-            >
-              <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main' }}>
-                <AccountCircle />
-              </Avatar>
-            </IconButton>
-          </Stack>
-          
-          <Menu
-            id="menu-appbar"
-            anchorEl={anchorEl}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={Boolean(anchorEl)}
-            onClose={handleMenuClose}
-          >
-            <MenuItem onClick={handleProfileClick}>
-              <AccountCircle sx={{ mr: 2 }} />
-              Profile
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleLogout}>
-              <Logout sx={{ mr: 2 }} />
-              Logout
-            </MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
-
       {/* Main Content */}
       <Container maxWidth="lg" sx={{ py: 4 }}>
         {/* Welcome Section */}
