@@ -7,6 +7,7 @@ import { Navigate, Route, BrowserRouter as Router, Routes, useLocation, useNavig
 
 import GuestRoute from './components/Common/GuestRoute';
 import { Home } from './components/home';
+import Profile from './components/Profile/Profile';
 import ProfileManagement from './components/ProfileManagement/ProfileManagement';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import React from 'react';
@@ -92,6 +93,14 @@ function RouteWrapper() {
                 element={
                     <ProtectedRoute>
                         <ProfileManagement {...defaultProps} />
+                    </ProtectedRoute>
+                } 
+            />
+            <Route 
+                path="/profile" 
+                element={
+                    <ProtectedRoute>
+                        <Profile />
                     </ProtectedRoute>
                 } 
             />
