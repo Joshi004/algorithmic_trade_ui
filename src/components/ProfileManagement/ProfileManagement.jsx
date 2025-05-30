@@ -1,10 +1,12 @@
-import React from 'react';
-import { Button, Input, Loader } from 'semantic-ui-react'; // Import Loader from semantic-ui-react
 import './ProfileManagement.scss';
-import { useNavigate } from 'react-router-dom';
+
+import { Button, Input, Loader } from 'semantic-ui-react'; // Import Loader from semantic-ui-react
+
+import ENDPOINTS from '../../services/endpoints';
+import React from 'react';
 import UserInfo from './UserInfo/UserInfo';
 import apiService from '../../services/apiService';
-import ENDPOINTS from '../../services/endpoints';
+import { useNavigate } from 'react-router-dom';
 
 class ProfileManagement extends React.Component {
     constructor(props) {
