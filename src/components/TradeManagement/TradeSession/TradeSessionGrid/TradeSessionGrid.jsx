@@ -1,10 +1,41 @@
 import React, { Component } from "react";
-import { Modal, Button, Icon } from "semantic-ui-react";
+import { 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  Button, 
+  Box, 
+  Typography,
+  Grid,
+  Fab
+} from "@mui/material";
+import { styled } from "@mui/material/styles";
+import AddIcon from "@mui/icons-material/Add";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import TradeSessionCard from "./TradeSessionCard/TradeSessionCard";
 import TradeSessionForm from "./TradeSessionForm/TradeSessionForm";
 import "./TradeSessionGrid.scss";
 import apiService from "../../../../services/apiService";
 import ENDPOINTS from "../../../../services/endpoints";
+
+// Styled components
+const StyledFab = styled(Fab)(({ theme }) => ({
+  position: 'fixed',
+  bottom: theme.spacing(3),
+  right: theme.spacing(3),
+  zIndex: 1000,
+}));
+
+const HeaderBox = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: theme.spacing(3),
+  padding: theme.spacing(2),
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: theme.spacing(1),
+  boxShadow: theme.shadows[1],
+}));
 
 class TradeSessionGrid extends Component {
   constructor(props) {
@@ -16,9 +47,14 @@ class TradeSessionGrid extends Component {
     this.fetchTradeSessionsInfo();
   }
 
-  handleFormSubmit = (formData) => {
-    this.setState({ modalOpen: false });
-    this.initiateTradeSession(formData);
+  handleFormSubmit = async (formData) => {
+    try {
+      await this.initiateTradeSession(formData);
+      this.setState({ modalOpen: false });
+    } catch (error) {
+      // Error is handled in the form component
+      console.error("Failed to initiate trade session:", error);
+    }
   };
 
   handleOpen = () => this.setState({ modalOpen: true });
@@ -56,22 +92,23 @@ class TradeSessionGrid extends Component {
   };
 
   initiateTradeSession = async (formData) => {
-    const { scanningAlgorithm, trackingAlgorithm, tradingFrequency, isDummy } = formData;
+    const { scanningAlgorithmId, initiationAlgorithmId, terminationAlgorithmId, tradingFrequency, isDummy } = formData;
     const dummyValue = isDummy ? 1 : 0;
     
     try {
-      const url = `${ENDPOINTS.TRADE_SESSIONS.INITIATE}?trading_frequency=${tradingFrequency}&user_id=1&dummy=${dummyValue}&scanning_algorithm_name=${scanningAlgorithm}&tracking_algorithm_name=${trackingAlgorithm}`;
+      const url = `${ENDPOINTS.TRADE_SESSIONS.INITIATE}?trading_frequency=${tradingFrequency}&dummy=${dummyValue}&scanning_algorithm_id=${scanningAlgorithmId}&initiation_algorithm_id=${initiationAlgorithmId}&termination_algorithm_id=${terminationAlgorithmId}`;
       const data = await apiService.get(url);
       this.populateTradeSession(data.trade_session_id);
       this.initiateCommunicationChannal(data.trade_session_id);
     } catch (error) {
       console.error("Error initiating trade session:", error);
+      throw error; // Re-throw to allow form to handle the error
     }
   };
 
   fetchTradeSessionsInfo = async () => {
     try {
-      const data = await apiService.get(`${ENDPOINTS.TRADE_SESSIONS.GET_ALL}?user_id=1&dummy=1`);
+      const data = await apiService.get(`${ENDPOINTS.TRADE_SESSIONS.GET_ALL}?dummy=1`);
       const sessions = data.data.trade_sessions;
       const updatedSessions = sessions.reduce((acc, session) => {
         acc[session.id] = session;
@@ -100,38 +137,78 @@ class TradeSessionGrid extends Component {
     });
 
     return (
-      <div className="trade-session-grid-component">
-        <div className="trade-session-grid-header">
-          <Modal
-            trigger={
-              <Button primary className="init-button" onClick={this.handleOpen}>
-                Create New Session <Icon name="plus" className="plus-icon" />
-              </Button>
-            }
-            open={modalOpen}
-            onClose={this.handleClose}
+      <Box className="trade-session-grid-component" p={3}>
+        <HeaderBox>
+          <Box>
+            <Typography variant="h4" component="h1" fontWeight="600" gutterBottom>
+              Trade Sessions
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Manage your algorithmic trading sessions
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            size="large"
+            startIcon={<PlayArrowIcon />}
+            onClick={this.handleOpen}
+            sx={{ 
+              borderRadius: 3,
+              px: 3,
+              py: 1.5,
+              fontSize: '1.1rem',
+              fontWeight: 600
+            }}
           >
-            <Modal.Header>Create Trade Session</Modal.Header>
-            <Modal.Content>
-              <TradeSessionForm onSubmit={this.handleFormSubmit} />
-            </Modal.Content>
-          </Modal>
-        </div>
-        <div className="trade-session-grid">
+            New Session
+          </Button>
+        </HeaderBox>
+
+        <Grid container spacing={3} className="trade-session-grid">
           {sortedSessions.map((session) => (
-            <TradeSessionCard
-              className="session-card"
-              terminateTradeSession={this.props.terminateTradeSession}
-              key={session.id}
-              session={session}
-              isNewSession={session.id === newSessionId}
-              handleTradeSessionDetails={this.props.updateselectedSession}
-              resumeTradeSession={this.props.resumeTradeSession}
-              updateSession={this.updateSession}
-            />
+            <Grid item xs={12} sm={6} md={4} key={session.id}>
+              <TradeSessionCard
+                className="session-card"
+                terminateTradeSession={this.props.terminateTradeSession}
+                session={session}
+                isNewSession={session.id === newSessionId}
+                handleTradeSessionDetails={this.props.updateselectedSession}
+                resumeTradeSession={this.props.resumeTradeSession}
+                updateSession={this.updateSession}
+              />
+            </Grid>
           ))}
-        </div>
-      </div>
+        </Grid>
+
+        {/* Floating Action Button for mobile */}
+        <StyledFab
+          color="primary"
+          aria-label="add"
+          onClick={this.handleOpen}
+          sx={{ display: { xs: 'flex', md: 'none' } }}
+        >
+          <AddIcon />
+        </StyledFab>
+
+        <Dialog 
+          open={modalOpen} 
+          onClose={this.handleClose}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{
+            sx: { borderRadius: 2 }
+          }}
+        >
+          <DialogTitle sx={{ pb: 1 }}>
+            <Typography variant="h5" component="h2" fontWeight="600">
+              Create New Trade Session
+            </Typography>
+          </DialogTitle>
+          <DialogContent sx={{ pt: 1 }}>
+            <TradeSessionForm onSubmit={this.handleFormSubmit} />
+          </DialogContent>
+        </Dialog>
+      </Box>
     );
   }
 }
