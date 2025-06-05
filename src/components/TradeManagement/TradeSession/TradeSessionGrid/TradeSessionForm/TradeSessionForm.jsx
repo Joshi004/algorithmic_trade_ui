@@ -1,28 +1,27 @@
-import React, { Component } from "react";
 import {
+  Alert,
   Box,
+  Button,
   Card,
   CardContent,
   CardHeader,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormControlLabel,
-  Switch,
-  Button,
-  Typography,
-  Alert,
-  CircularProgress,
   Chip,
+  CircularProgress,
   Divider,
-  Paper
+  FormControl,
+  FormControlLabel,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Switch,
+  Typography
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import React, { Component } from "react";
+
 import InfoIcon from "@mui/icons-material/Info";
-import apiService from "../../../../../services/apiService";
-import ENDPOINTS from "../../../../../services/endpoints";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import { styled } from "@mui/material/styles";
 
 // Styled components for modern UI
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -84,38 +83,57 @@ class TradeSessionForm extends Component {
   }
 
   async componentDidMount() {
-    await this.fetchSessionParameters();
+    this.processSessionParameters();
   }
 
-  fetchSessionParameters = async () => {
+  componentDidUpdate(prevProps) {
+    // Update options when sessionParameters prop changes
+    if (prevProps.sessionParameters !== this.props.sessionParameters) {
+      this.processSessionParameters();
+    }
+  }
+
+  processSessionParameters = () => {
+    const { sessionParameters, parametersLoading } = this.props;
+    
+    if (parametersLoading) {
+      this.setState({ loading: true });
+      return;
+    }
+
+    if (!sessionParameters) {
+      this.setState({ 
+        error: "Failed to load session parameters. Please try again.",
+        loading: false 
+      });
+      return;
+    }
+
     try {
-      this.setState({ loading: true, error: null });
-      const data = await apiService.get(ENDPOINTS.TRADE_SESSIONS.GET_PARAMS);
-      
-      const scanningOptions = data.data.scanning_algorithms.map(algo => ({
+      const scanningOptions = sessionParameters.scanning_algorithms.map(algo => ({
         id: algo.id,
         name: algo.name,
         displayName: algo.display_name,
         description: algo.description
       }));
       
-      const initiationOptions = data.data.initiation_algorithms.map(algo => ({
+      const initiationOptions = sessionParameters.initiation_algorithms.map(algo => ({
         id: algo.id,
         name: algo.name,
         displayName: algo.display_name,
         description: algo.description
       }));
       
-      const terminationOptions = data.data.termination_algorithms.map(algo => ({
+      const terminationOptions = sessionParameters.termination_algorithms.map(algo => ({
         id: algo.id,
         name: algo.name,
         displayName: algo.display_name,
         description: algo.description
       }));
       
-      const frequencyOptions = data.data.trading_frequencies.map(freq => ({
+      const frequencyOptions = sessionParameters.trading_frequencies.map(freq => ({
         value: freq,
-        label: freq.charAt(0).toUpperCase() + freq.slice(1).replace(/(\d+)/g, ' $1')
+        label: this.formatFrequencyLabel(freq)
       }));
       
       this.setState({ 
@@ -123,15 +141,32 @@ class TradeSessionForm extends Component {
         initiationOptions, 
         terminationOptions, 
         frequencyOptions,
-        loading: false 
+        loading: false,
+        error: null
       });
     } catch (error) {
-      console.error("Error fetching session parameters:", error);
+      console.error("Error processing session parameters:", error);
       this.setState({ 
-        error: "Failed to load session parameters. Please try again.",
+        error: "Failed to process session parameters. Please try again.",
         loading: false 
       });
     }
+  };
+
+  formatFrequencyLabel = (freq) => {
+    // Convert frequency values to user-friendly display text
+    const formatMap = {
+      '1-minute': '1 Minute',
+      '3-minute': '3 Minute', 
+      '5-minute': '5 Minute',
+      '10-minute': '10 Minute',
+      '15-minute': '15 Minute',
+      '30-minute': '30 Minute',
+      '60-minute': '60 Minute',
+      '1-day': '1 Day'
+    };
+    
+    return formatMap[freq] || freq.charAt(0).toUpperCase() + freq.slice(1);
   };
 
   handleChange = (field) => (event) => {

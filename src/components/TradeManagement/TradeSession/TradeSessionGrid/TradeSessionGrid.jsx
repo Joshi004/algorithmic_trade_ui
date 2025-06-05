@@ -205,7 +205,11 @@ class TradeSessionGrid extends Component {
             </Typography>
           </DialogTitle>
           <DialogContent sx={{ pt: 1 }}>
-            <TradeSessionForm onSubmit={this.handleFormSubmit} />
+            <TradeSessionForm 
+              onSubmit={this.handleFormSubmit} 
+              sessionParameters={this.props.sessionParameters}
+              parametersLoading={this.props.parametersLoading}
+            />
           </DialogContent>
         </Dialog>
       </Box>

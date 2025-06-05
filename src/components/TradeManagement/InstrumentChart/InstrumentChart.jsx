@@ -1,11 +1,13 @@
-import React from 'react';
-import { Button, Form, Input, Label } from 'semantic-ui-react';
 import './InstrumentChart.scss';
+
+import { Button, Form, Input, Label } from 'semantic-ui-react';
+
 import CandlestickChart from './MyChart/CandlestickChart';
+import ENDPOINTS from '../../../services/endpoints';
 import { InstrumentChartHelper } from './InstrumentChartHelper';
 import InstrumentSearchComponent from '../../Common/GenericInstrumentSearch/InstrumentSearch';
+import React from 'react';
 import apiService from '../../../services/apiService';
-import ENDPOINTS from '../../../services/endpoints';
 
 class InstrumentChrt extends React.Component {
   constructor(props) {
@@ -27,7 +29,7 @@ class InstrumentChrt extends React.Component {
     const { startDate, endDate, symbol, interval } = this.state;
     
     try {
-      const url = `${ENDPOINTS.SCANNER_ALGOS.GET_UDTS_ELIGIBILITY}?symbol=${symbol}&trade_frequency=15minute`;
+      const url = `${ENDPOINTS.SCANNER_ALGOS.GET_UDTS_ELIGIBILITY}?symbol=${symbol}&trade_frequency=15-minute`;
       const data = await apiService.get(url);
 
       const transformedData = data.data.price_list.map(item => ({

@@ -6,6 +6,8 @@ import TradeSessionGrid from "./TradeSessionGrid/TradeSessionGrid";
 import "./TradeSession.scss";
 import TradeSessionDetail from "./TradeSessionDetail/TradeSessionDetail";
 import config from "../../../config";
+import apiService from "../../../services/apiService";
+import ENDPOINTS from "../../../services/endpoints";
 
 class TradeSession extends Component {
   constructor(props) {
@@ -13,8 +15,31 @@ class TradeSession extends Component {
     this.ws = null;
     this.state = {
       selectedSessionId: null,
+      sessionParameters: null,
+      parametersLoading: true,
     };
   }
+
+  async componentDidMount() {
+    await this.fetchSessionParameters();
+  }
+
+  fetchSessionParameters = async () => {
+    try {
+      this.setState({ parametersLoading: true });
+      const data = await apiService.get(ENDPOINTS.TRADE_SESSIONS.GET_PARAMS);
+      this.setState({ 
+        sessionParameters: data.data,
+        parametersLoading: false 
+      });
+    } catch (error) {
+      console.error("Error fetching session parameters:", error);
+      this.setState({ 
+        sessionParameters: null,
+        parametersLoading: false 
+      });
+    }
+  };
 
   initiateCommunicationChannal = (tradeSessionID) => {
     console.log("Initiate Communication Channal");
@@ -50,15 +75,21 @@ class TradeSession extends Component {
   }
 
   render() {
-    const { selectedSessionId } = this.state;
+    const { selectedSessionId, sessionParameters, parametersLoading } = this.state;
     return (
       <div className="trade-session">
         {selectedSessionId ? (
-          <TradeSessionDetail tradeSessionID={selectedSessionId} />
+          <TradeSessionDetail 
+            tradeSessionID={selectedSessionId} 
+            sessionParameters={sessionParameters}
+            parametersLoading={parametersLoading}
+          />
         ) : (
           <div className="trade-session">
             <TradeSessionGrid
               updateselectedSession={this.updateselectedSessionId}
+              sessionParameters={sessionParameters}
+              parametersLoading={parametersLoading}
             />
           </div>
         )}

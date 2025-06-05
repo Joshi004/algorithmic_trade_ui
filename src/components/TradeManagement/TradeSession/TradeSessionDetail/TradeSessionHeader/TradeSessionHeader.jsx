@@ -1,25 +1,101 @@
-import React, { Component } from "react";
-import { Card } from "semantic-ui-react";
 import "./TradeSessionHeader.scss";
+
+import React, { Component } from "react";
+
+import { Card } from "semantic-ui-react";
 import { Dropdown } from "semantic-ui-react";
 
 class TradeSessionHeader extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      frequencyOptions: [],
+      loadingOptions: true
+    };
+  }
+
+  async componentDidMount() {
+    this.processFrequencyOptions();
+  }
+
+  componentDidUpdate(prevProps) {
+    // Update options when sessionParameters prop changes
+    if (prevProps.sessionParameters !== this.props.sessionParameters ||
+        prevProps.parametersLoading !== this.props.parametersLoading) {
+      this.processFrequencyOptions();
+    }
+  }
+
+  processFrequencyOptions = () => {
+    const { sessionParameters, parametersLoading } = this.props;
+    
+    if (parametersLoading) {
+      this.setState({ loadingOptions: true });
+      return;
+    }
+
+    if (!sessionParameters || !sessionParameters.trading_frequencies) {
+      console.error("No frequency options available from session parameters");
+      this.setState({ 
+        frequencyOptions: [],
+        loadingOptions: false 
+      });
+      return;
+    }
+
+    try {
+      const frequencyOptions = sessionParameters.trading_frequencies.map(freq => ({
+        key: freq,
+        text: this.formatFrequencyText(freq),
+        value: freq
+      }));
+      
+      this.setState({ 
+        frequencyOptions,
+        loadingOptions: false 
+      });
+    } catch (error) {
+      console.error("Error processing frequency options:", error);
+      this.setState({ 
+        frequencyOptions: [],
+        loadingOptions: false 
+      });
+    }
+  }
+
+  formatFrequencyText = (freq) => {
+    // Convert frequency values to user-friendly text
+    const formatMap = {
+      '1-minute': '1 Minute',
+      '3-minute': '3 Minute',
+      '5-minute': '5 Minute',
+      '10-minute': '10 Minute',
+      '15-minute': '15 Minute',
+      '30-minute': '30 Minute',
+      '60-minute': '60 Minute',
+      '1-day': '1 Day'
+    };
+    
+    return formatMap[freq] || freq.charAt(0).toUpperCase() + freq.slice(1);
+  }
+
   renderFrequencyDropDown = () => {
     const { currentFrequency } = this.props;
+    const { frequencyOptions, loadingOptions } = this.state;
+    
+    // If no options available (API failure), show disabled dropdown
+    const isDisabled = !loadingOptions && frequencyOptions.length === 0;
+    const placeholder = isDisabled ? "No frequencies available" : "Select Frequency";
+    
     return (
       <Dropdown
-        placeholder="Select Frequency"
+        placeholder={placeholder}
         fluid
         selection
+        loading={loadingOptions}
+        disabled={isDisabled}
         value={currentFrequency}
-        options={[
-          { key: "minute", text: "1 Minute", value: "minute" },
-          { key: "3minute", text: "3 Minute", value: "3minute" },
-          { key: "5minute", text: "5 Minute", value: "5minute" },
-          { key: "10minute", text: "10 Minute", value: "10minute" },
-          { key: "15minute", text: "15 Minute", value: "15minute" },
-          { key: "day", text: "1 Day", value: "day" },
-        ]}
+        options={frequencyOptions}
         onChange={(e, { value }) => {
           this.props.updateFrequency(value);
         }}

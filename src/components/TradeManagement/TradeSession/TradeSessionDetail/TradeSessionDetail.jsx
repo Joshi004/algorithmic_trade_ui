@@ -151,6 +151,8 @@ class TradeSessionDetail extends Component {
               dataPoints={dataPoints}
               updateFrequency={this.upadteFreqyency}
               currentFrequency={tradeFrequency}
+              sessionParameters={this.props.sessionParameters}
+              parametersLoading={this.props.parametersLoading}
             />
           )}
         </div>
