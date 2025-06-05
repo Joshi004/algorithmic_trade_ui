@@ -52,11 +52,22 @@ class ProfileManagement extends React.Component {
         try {
             const data = await apiService.post(ENDPOINTS.KITE.SET_SESSION, { request_token });
             this.setState({ setSession: true, userInfo: data }, () => {
-                this.props.navigate(this.props.location.pathname, { replace: true });
+                // Check if login was initiated from dashboard
+                const fromDashboard = localStorage.getItem('kiteLoginFromDashboard');
+                if (fromDashboard === 'true') {
+                    // Clear the flag and redirect to profile page
+                    localStorage.removeItem('kiteLoginFromDashboard');
+                    this.props.navigate('/profile');
+                } else {
+                    // Normal behavior - just clean up the URL
+                    this.props.navigate(this.props.location.pathname, { replace: true });
+                }
             });
         } catch (error) {
             console.error('Error:', error);
             this.setState({ setSession: false }, () => {
+                // Clean up localStorage flag even on error
+                localStorage.removeItem('kiteLoginFromDashboard');
                 this.props.navigate(this.props.location.pathname, { replace: true });
             });
         }

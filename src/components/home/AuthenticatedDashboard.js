@@ -18,6 +18,7 @@ import {
 } from '@mui/icons-material';
 import React, { useEffect, useState } from 'react';
 
+import KiteLoginButton from '../Common/KiteLoginButton';
 import kiteService from '../../services/kiteService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -50,6 +51,15 @@ const AuthenticatedDashboard = () => {
         navigate('/login');
       }
     }
+  };
+
+  const handleKiteLoginInitiate = () => {
+    // Store flag in localStorage to track that login was initiated from dashboard
+    localStorage.setItem('kiteLoginFromDashboard', 'true');
+  };
+
+  const handleCheckConnectionStatus = async () => {
+    await checkKiteConnection();
   };
 
   return (
@@ -186,6 +196,41 @@ const AuthenticatedDashboard = () => {
                       )}
                     </Box>
                   </Box>
+
+                  {/* Connection Button for Disconnected State */}
+                  {kiteConnectionStatus === 'disconnected' && (
+                    <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${alpha(theme.palette.divider, 0.12)}` }}>
+                      <Stack spacing={1.5}>
+                        <KiteLoginButton 
+                          variant="contained"
+                          size="small"
+                          fullWidth
+                          onInitiate={handleKiteLoginInitiate}
+                          sx={{ 
+                            textTransform: 'none',
+                            borderRadius: '8px',
+                            py: 1
+                          }}
+                        >
+                          Connect to Zerodha
+                        </KiteLoginButton>
+                        
+                        <Button 
+                          variant="outlined" 
+                          size="small"
+                          onClick={handleCheckConnectionStatus}
+                          fullWidth
+                          sx={{ 
+                            textTransform: 'none',
+                            borderRadius: '8px',
+                            py: 1
+                          }}
+                        >
+                          Check Status
+                        </Button>
+                      </Stack>
+                    </Box>
+                  )}
                 </Stack>
               </CardContent>
             </Card>

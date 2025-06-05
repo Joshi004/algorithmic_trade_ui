@@ -9,6 +9,7 @@ const KiteLoginButton = ({
   size = 'medium', 
   fullWidth = false,
   children = 'Connect to Zerodha',
+  onInitiate = null,
   ...props 
 }) => {
   const [loading, setLoading] = useState(false);
@@ -31,6 +32,11 @@ const KiteLoginButton = ({
         
         // Show other errors
         setError(result.message || 'Failed to initiate Kite login');
+      } else {
+        // Call the onInitiate callback if provided
+        if (onInitiate && typeof onInitiate === 'function') {
+          onInitiate();
+        }
       }
       
       // If successful, the user will be redirected to Kite login
