@@ -1,13 +1,15 @@
-import React, { Component } from "react";
-import { w3cwebsocket as WebSocketClient } from "websocket";
+import "./TradeSession.scss";
+
 import { Button, Icon, Modal } from "semantic-ui-react";
+import React, { Component } from "react";
+
+import ENDPOINTS from "../../../services/endpoints";
+import TradeSessionDetail from "./TradeSessionDetail/TradeSessionDetail";
 import TradeSessionForm from "./TradeSessionGrid/TradeSessionForm/TradeSessionForm";
 import TradeSessionGrid from "./TradeSessionGrid/TradeSessionGrid";
-import "./TradeSession.scss";
-import TradeSessionDetail from "./TradeSessionDetail/TradeSessionDetail";
-import config from "../../../config";
+import { w3cwebsocket as WebSocketClient } from "websocket";
 import apiService from "../../../services/apiService";
-import ENDPOINTS from "../../../services/endpoints";
+import config from "../../../config";
 
 class TradeSession extends Component {
   constructor(props) {

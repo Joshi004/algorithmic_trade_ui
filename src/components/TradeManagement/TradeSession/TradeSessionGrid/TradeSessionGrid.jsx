@@ -1,22 +1,24 @@
-import React, { Component } from "react";
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  Button, 
-  Box, 
-  Typography,
+import "./TradeSessionGrid.scss";
+
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Fab,
   Grid,
-  Fab
+  Typography
 } from "@mui/material";
-import { styled } from "@mui/material/styles";
+import React, { Component } from "react";
+
 import AddIcon from "@mui/icons-material/Add";
+import ENDPOINTS from "../../../../services/endpoints";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import TradeSessionCard from "./TradeSessionCard/TradeSessionCard";
 import TradeSessionForm from "./TradeSessionForm/TradeSessionForm";
-import "./TradeSessionGrid.scss";
 import apiService from "../../../../services/apiService";
-import ENDPOINTS from "../../../../services/endpoints";
+import { styled } from "@mui/material/styles";
 
 // Styled components
 const StyledFab = styled(Fab)(({ theme }) => ({

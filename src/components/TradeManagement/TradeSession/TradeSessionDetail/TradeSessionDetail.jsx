@@ -1,12 +1,14 @@
+import "./TradeSessionDetail.scss";
+
 import React, { Component } from "react";
-import TradeSessionHeader from "./TradeSessionHeader/TradeSessionHeader";
-import { getISTDate } from "../../../lib/Utils";
+
+import ENDPOINTS from "../../../../services/endpoints";
+import { Loader } from "semantic-ui-react";
 import TradeBar from "./TradeBar/TradeBar"; // Import the TradeBar component
 import TradeChart from "./TradeChart/TradeChart"; // Import the InstrumentChart component
-import { Loader } from "semantic-ui-react";
-import "./TradeSessionDetail.scss";
+import TradeSessionHeader from "./TradeSessionHeader/TradeSessionHeader";
 import apiService from "../../../../services/apiService";
-import ENDPOINTS from "../../../../services/endpoints";
+import { getISTDate } from "../../../lib/Utils";
 
 class TradeSessionDetail extends Component {
   state = {
