@@ -5,12 +5,15 @@ import {
   CardContent,
   CircularProgress,
   Container,
+  IconButton,
+  InputAdornment,
   Link as MuiLink,
   TextField,
   Typography
 } from '@mui/material';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 import toastService from '../../services/toastService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -21,6 +24,7 @@ const Login = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -36,6 +40,10 @@ const Login = () => {
     }));
     // Dismiss any existing toasts when user starts typing
     toastService.dismissAll();
+  };
+
+  const handleTogglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   const handleSubmit = async (e) => {
@@ -109,12 +117,26 @@ const Login = () => {
                 fullWidth
                 name="password"
                 label="Password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 id="password"
                 autoComplete="current-password"
                 value={formData.password}
                 onChange={handleChange}
                 disabled={loading}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle password visibility"
+                        onClick={handleTogglePasswordVisibility}
+                        edge="end"
+                        disabled={loading}
+                      >
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
               <Button
                 type="submit"
