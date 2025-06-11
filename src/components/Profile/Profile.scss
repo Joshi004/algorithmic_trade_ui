@@ -1,0 +1,34 @@
+// Profile Component Styles
+// Currently using Material-UI sx props for styling
+// This file is reserved for any custom SCSS styling if needed in the future
+
+.profile {
+  // Reserved for main profile container styling
+}
+
+.profile__container {
+  // Reserved for main container styling
+}
+
+.profile__sidebar {
+  // Reserved for left sidebar styling
+}
+
+.profile__main-content {
+  // Reserved for main content area styling
+}
+
+.profile__section {
+  // Reserved for individual section styling
+}
+
+// Responsive breakpoints can be added here
+@media (max-width: 1200px) {
+  .profile__sidebar {
+    // Mobile-specific sidebar styling
+  }
+  
+  .profile__main-content {
+    // Mobile-specific main content styling
+  }
+} 

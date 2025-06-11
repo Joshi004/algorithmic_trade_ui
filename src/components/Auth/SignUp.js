@@ -1,5 +1,4 @@
 import {
-  Backdrop,
   Box,
   Button,
   Card,
@@ -22,6 +21,7 @@ import React, { useState } from 'react';
 
 import toastService from '../../services/toastService';
 import { useAuth } from '../../contexts/AuthContext';
+import LoadingBackdrop from '../Common/LoadingBackdrop';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -340,23 +340,11 @@ const SignUp = () => {
       </Container>
 
       {/* Full Page Loading Overlay */}
-      <Backdrop
-        sx={{ 
-          color: '#fff', 
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          flexDirection: 'column',
-          gap: 2
-        }}
+      <LoadingBackdrop
         open={isNavigating}
-      >
-        <CircularProgress color="inherit" size={60} />
-        <Typography variant="h6" color="inherit">
-          Account Created Successfully!
-        </Typography>
-        <Typography variant="body2" color="inherit" sx={{ opacity: 0.8 }}>
-          Redirecting you to the login page...
-        </Typography>
-      </Backdrop>
+        title="Account Created Successfully!"
+        subtitle="Redirecting you to the login page..."
+      />
     </>
   );
 };

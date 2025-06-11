@@ -1,8 +1,9 @@
-import { Backdrop, Box, Button, CircularProgress, Typography } from '@mui/material';
+import { Box, Button, CircularProgress } from '@mui/material';
 import React, { useState } from 'react';
 
 import brokerService from '../../services/brokerService';
 import toastService from '../../services/toastService';
+import LoadingBackdrop from './LoadingBackdrop';
 import { useNavigate } from 'react-router-dom';
 
 const KiteLoginButton = ({ 
@@ -93,42 +94,18 @@ const KiteLoginButton = ({
       </Button>
 
       {/* Full Page Loading Overlay for Connection */}
-      <Backdrop
-        sx={{ 
-          color: '#fff', 
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          flexDirection: 'column',
-          gap: 2
-        }}
+      <LoadingBackdrop
         open={isConnecting}
-      >
-        <CircularProgress color="inherit" size={60} />
-        <Typography variant="h6" color="inherit">
-          Connecting to Zerodha
-        </Typography>
-        <Typography variant="body2" color="inherit" sx={{ opacity: 0.8 }}>
-          Please wait while we establish connection...
-        </Typography>
-      </Backdrop>
+        title="Connecting to Zerodha"
+        subtitle="Please wait while we establish connection..."
+      />
 
       {/* Full Page Loading Overlay for Navigation */}
-      <Backdrop
-        sx={{ 
-          color: '#fff', 
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          flexDirection: 'column',
-          gap: 2
-        }}
+      <LoadingBackdrop
         open={isNavigating}
-      >
-        <CircularProgress color="inherit" size={60} />
-        <Typography variant="h6" color="inherit">
-          Broker Credentials Required
-        </Typography>
-        <Typography variant="body2" color="inherit" sx={{ opacity: 0.8 }}>
-          Redirecting you to broker registration...
-        </Typography>
-      </Backdrop>
+        title="Broker Credentials Required"
+        subtitle="Redirecting you to broker registration..."
+      />
     </>
   );
 };
