@@ -142,6 +142,9 @@ Redirect or allow access based on rules
   <Route path="/trade-management" element={
     <ProtectedRoute><TradeManagement /></ProtectedRoute>
   } />
+  <Route path="/profile-management/*" element={
+    <ProtectedRoute><ProfileManagement /></ProtectedRoute>
+  } />
   <Route path="/broker-registration" element={
     <ProtectedRoute><BrokerRegistration /></ProtectedRoute>
   } />
