@@ -1,4 +1,5 @@
 import {
+  Backdrop,
   Box,
   Button,
   Card,
@@ -6,6 +7,7 @@ import {
   CircularProgress,
   Collapse,
   Container,
+  Grid,
   List,
   ListItem,
   ListItemIcon,
@@ -23,11 +25,14 @@ import { useAuth } from '../../contexts/AuthContext';
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [showPasswordRules, setShowPasswordRules] = useState(false);
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -87,8 +92,8 @@ const SignUp = () => {
 
     try {
       // Frontend validation
-      if (!formData.email || !formData.password || !formData.confirmPassword) {
-        toastService.error('Please fill in all fields', 'Missing Information');
+      if (!formData.firstName || !formData.email || !formData.password || !formData.confirmPassword) {
+        toastService.error('Please fill in all required fields', 'Missing Information');
         setLoading(false);
         return;
       }
@@ -117,6 +122,8 @@ const SignUp = () => {
 
       // Call registration through auth context
       const response = await register({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
         email: formData.email,
         password: formData.password
       });
@@ -126,17 +133,22 @@ const SignUp = () => {
       
       // Clear form
       setFormData({
+        firstName: '',
+        lastName: '',
         email: '',
         password: '',
         confirmPassword: ''
       });
       setShowPasswordRules(false);
       
-      // Redirect to login after a short delay with loading state maintained
+      // Set navigation loading state
+      setLoading(false);
+      setIsNavigating(true);
+      
+      // Redirect to login after a short delay
       setTimeout(() => {
         navigate('/login');
-        setLoading(false);
-      }, 1000);
+      }, 1500);
       
     } catch (err) {
       console.error('Registration error:', err);
@@ -145,139 +157,207 @@ const SignUp = () => {
     }
   };
 
-  return (
-    <Container component="main" maxWidth="sm">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Card sx={{ width: '100%', maxWidth: 500 }}>
-          <CardContent sx={{ p: 4 }}>
-            <Typography component="h1" variant="h4" align="center" gutterBottom>
-              Sign Up
-            </Typography>
-            <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
-              Create your account to start trading
-            </Typography>
-            
-            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="email"
-                label="Email Address"
-                name="email"
-                autoComplete="email"
-                autoFocus
-                value={formData.email}
-                onChange={handleChange}
-                disabled={loading}
-                type="email"
-              />
-              
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                type="password"
-                id="password"
-                autoComplete="new-password"
-                value={formData.password}
-                onChange={handleChange}
-                disabled={loading}
-                onFocus={() => setShowPasswordRules(true)}
-              />
-              
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                name="confirmPassword"
-                label="Confirm Password"
-                type="password"
-                id="confirmPassword"
-                autoComplete="new-password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                disabled={loading}
-                error={formData.confirmPassword && formData.password !== formData.confirmPassword}
-                helperText={
-                  formData.confirmPassword && formData.password !== formData.confirmPassword
-                    ? 'Passwords do not match'
-                    : ''
-                }
-              />
+  const isFormDisabled = loading || isNavigating;
 
-              {/* Password Requirements */}
-              <Collapse in={showPasswordRules}>
-                <Box sx={{ mt: 2, mb: 2 }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <Info sx={{ mr: 1, fontSize: 'small' }} />
-                    <Typography variant="body2" color="text.secondary">
-                      Password Requirements:
-                    </Typography>
+  return (
+    <>
+      <Container component="main" maxWidth="sm">
+        <Box
+          sx={{
+            marginTop: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+          }}
+        >
+          <Card sx={{ width: '100%', maxWidth: 500 }}>
+            <CardContent sx={{ p: 4 }}>
+              <Typography component="h1" variant="h4" align="center" gutterBottom>
+                Sign Up
+              </Typography>
+              <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
+                Create your account to start trading
+              </Typography>
+              
+              <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+                {/* First Name Field - Full Width */}
+
+                  <Grid item xs={12} sm={6}>
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  id="firstName"
+                  label="First Name"
+                  name="firstName"
+                  autoComplete="given-name"
+                  autoFocus
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  disabled={isFormDisabled}
+                /></Grid>
+                
+                {/* Last Name and Email Fields - Side by Side */}
+
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      margin="normal"
+                      fullWidth
+                      id="lastName"
+                      label="Last Name"
+                      name="lastName"
+                      autoComplete="family-name"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      disabled={isFormDisabled}
+                    />
+                  </Grid>
+
+                
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      margin="normal"
+                      required
+                      fullWidth
+                      id="email"
+                      label="Email Address"
+                      name="email"
+                      autoComplete="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                      disabled={isFormDisabled}
+                      type="email"
+                      sx={{ mt: 2 }}
+                    />
+                  </Grid>
+
+                
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="password"
+                  label="Password"
+                  type="password"
+                  id="password"
+                  autoComplete="new-password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={isFormDisabled}
+                  onFocus={() => setShowPasswordRules(true)}
+                />
+                
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
+                  name="confirmPassword"
+                  label="Confirm Password"
+                  type="password"
+                  id="confirmPassword"
+                  autoComplete="new-password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  disabled={isFormDisabled}
+                  error={formData.confirmPassword && formData.password !== formData.confirmPassword}
+                  helperText={
+                    formData.confirmPassword && formData.password !== formData.confirmPassword
+                      ? 'Passwords do not match'
+                      : ''
+                  }
+                />
+
+                {/* Password Requirements */}
+                <Collapse in={showPasswordRules && !isNavigating}>
+                  <Box sx={{ mt: 2, mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <Info sx={{ mr: 1, fontSize: 'small' }} />
+                      <Typography variant="body2" color="text.secondary">
+                        Password Requirements:
+                      </Typography>
+                    </Box>
+                    <List dense sx={{ pl: 2 }}>
+                      {passwordRules.map((rule) => {
+                        const isValid = getPasswordRuleStatus(rule);
+                        return (
+                          <ListItem key={rule.id} sx={{ py: 0.5 }}>
+                            <ListItemIcon sx={{ minWidth: 32 }}>
+                              {isValid ? (
+                                <CheckCircle sx={{ fontSize: 16, color: 'success.main' }} />
+                              ) : (
+                                <Cancel sx={{ fontSize: 16, color: 'error.main' }} />
+                              )}
+                            </ListItemIcon>
+                            <ListItemText 
+                              primary={rule.text}
+                              primaryTypographyProps={{
+                                variant: 'body2',
+                                color: isValid ? 'success.main' : 'text.secondary'
+                              }}
+                            />
+                          </ListItem>
+                        );
+                      })}
+                    </List>
                   </Box>
-                  <List dense sx={{ pl: 2 }}>
-                    {passwordRules.map((rule) => {
-                      const isValid = getPasswordRuleStatus(rule);
-                      return (
-                        <ListItem key={rule.id} sx={{ py: 0.5 }}>
-                          <ListItemIcon sx={{ minWidth: 32 }}>
-                            {isValid ? (
-                              <CheckCircle sx={{ fontSize: 16, color: 'success.main' }} />
-                            ) : (
-                              <Cancel sx={{ fontSize: 16, color: 'error.main' }} />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText 
-                            primary={rule.text}
-                            primaryTypographyProps={{
-                              variant: 'body2',
-                              color: isValid ? 'success.main' : 'text.secondary'
-                            }}
-                          />
-                        </ListItem>
-                      );
-                    })}
-                  </List>
+                </Collapse>
+                
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 3, mb: 2 }}
+                  disabled={isFormDisabled}
+                  size="large"
+                >
+                  {loading ? (
+                    <>
+                      <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                      Creating Account...
+                    </>
+                  ) : isNavigating ? (
+                    <>
+                      <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                      Redirecting to Login...
+                    </>
+                  ) : (
+                    'Sign Up'
+                  )}
+                </Button>
+                
+                <Box sx={{ textAlign: 'center', mt: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Already have an account?{' '}
+                    <MuiLink component={Link} to="/login" underline="hover">
+                      Sign In
+                    </MuiLink>
+                  </Typography>
                 </Box>
-              </Collapse>
-              
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-                disabled={loading}
-                size="large"
-              >
-                {loading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  'Sign Up'
-                )}
-              </Button>
-              
-              <Box sx={{ textAlign: 'center', mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Already have an account?{' '}
-                  <MuiLink component={Link} to="/login" underline="hover">
-                    Sign In
-                  </MuiLink>
-                </Typography>
               </Box>
-            </Box>
-          </CardContent>
-        </Card>
-      </Box>
-    </Container>
+            </CardContent>
+          </Card>
+        </Box>
+      </Container>
+
+      {/* Full Page Loading Overlay */}
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          flexDirection: 'column',
+          gap: 2
+        }}
+        open={isNavigating}
+      >
+        <CircularProgress color="inherit" size={60} />
+        <Typography variant="h6" color="inherit">
+          Account Created Successfully!
+        </Typography>
+        <Typography variant="body2" color="inherit" sx={{ opacity: 0.8 }}>
+          Redirecting you to the login page...
+        </Typography>
+      </Backdrop>
+    </>
   );
 };
 

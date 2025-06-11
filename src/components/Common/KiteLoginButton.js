@@ -1,7 +1,7 @@
-import { Box, Button, CircularProgress } from '@mui/material';
+import { Backdrop, Box, Button, CircularProgress, Typography } from '@mui/material';
 import React, { useState } from 'react';
 
-import kiteService from '../../services/kiteService';
+import brokerService from '../../services/brokerService';
 import toastService from '../../services/toastService';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,6 +14,7 @@ const KiteLoginButton = ({
   ...props 
 }) => {
   const [loading, setLoading] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const navigate = useNavigate();
 
   const handleKiteLogin = async () => {
@@ -21,14 +22,20 @@ const KiteLoginButton = ({
     toastService.dismissAll();
 
     try {
-      const result = await kiteService.initiateKiteLogin();
+      const result = await brokerService.initiateKiteLogin();
       
       if (!result.success) {
         if (result.error === 'NO_BROKER_CREDENTIALS') {
           toastService.warning('Please register your broker credentials first. Redirecting...', 'Broker Credentials Required', 3000);
+          
+          // Set navigation loading state
+          setLoading(false);
+          setIsNavigating(true);
+          
           // Brief delay before redirect
           setTimeout(() => {
             navigate('/broker-registration');
+            setIsNavigating(false);
           }, 2000);
           return;
         }
@@ -56,22 +63,44 @@ const KiteLoginButton = ({
   };
 
   return (
-    <Box>
+    <>
       <Button
         variant={variant}
         size={size}
         fullWidth={fullWidth}
         onClick={handleKiteLogin}
-        disabled={loading}
+        disabled={loading || isNavigating}
         {...props}
       >
-        {loading ? (
-          <CircularProgress size={24} color="inherit" />
+        {loading || isNavigating ? (
+          <Box display="flex" alignItems="center">
+            <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+            {loading ? 'Connecting...' : 'Redirecting...'}
+          </Box>
         ) : (
           children
         )}
       </Button>
-    </Box>
+
+      {/* Full Page Loading Overlay for Navigation */}
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          flexDirection: 'column',
+          gap: 2
+        }}
+        open={isNavigating}
+      >
+        <CircularProgress color="inherit" size={60} />
+        <Typography variant="h6" color="inherit">
+          Broker Credentials Required
+        </Typography>
+        <Typography variant="body2" color="inherit" sx={{ opacity: 0.8 }}>
+          Redirecting you to broker registration...
+        </Typography>
+      </Backdrop>
+    </>
   );
 };
 

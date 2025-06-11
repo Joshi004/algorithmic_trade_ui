@@ -2,9 +2,83 @@ import ENDPOINTS from './endpoints';
 import apiService from './apiService';
 
 /**
- * Service for handling Kite/Zerodha integration
+ * Service for handling broker management and Kite/Zerodha integration operations
  */
-class KiteService {
+class BrokerService {
+  /**
+   * Check if user has registered broker credentials
+   * @returns {Promise<Object>} - Response with broker registration status
+   */
+  async checkBrokerRegistrationStatus() {
+    try {
+      const response = await apiService.get(ENDPOINTS.BROKER.GET_USER_BROKERS);
+      console.log('Broker service - API response:', response);
+      
+      // Handle different response formats
+      let isRegistered = false;
+      if (response) {
+        // Check multiple possible response formats
+        if (response.brokers && Array.isArray(response.brokers) && response.brokers.length > 0) {
+          isRegistered = true;
+        } else if (Array.isArray(response) && response.length > 0) {
+          isRegistered = true;
+        } else if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+          isRegistered = true;
+        }
+      }
+      
+      console.log('Broker service - isRegistered:', isRegistered);
+      
+      return {
+        success: true,
+        isRegistered,
+        data: response
+      };
+    } catch (error) {
+      console.error('Check broker registration status error:', error);
+      
+      // If no brokers found or 404, it's still a successful check but not registered
+      if (error.message && (
+        error.message.includes('No brokers found') || 
+        error.message.includes('404') ||
+        error.status === 404
+      )) {
+        return {
+          success: true,
+          isRegistered: false,
+          data: null
+        };
+      }
+      
+      return {
+        success: false,
+        isRegistered: false,
+        error: error.message || 'Failed to check broker registration status'
+      };
+    }
+  }
+
+  /**
+   * Register broker credentials
+   * @param {Object} brokerData - Broker credentials data
+   * @returns {Promise<Object>} - Response from broker registration
+   */
+  async registerBroker(brokerData) {
+    try {
+      const response = await apiService.post(ENDPOINTS.BROKER.REGISTER, brokerData);
+      return {
+        success: true,
+        data: response
+      };
+    } catch (error) {
+      console.error('Broker registration error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to register broker credentials'
+      };
+    }
+  }
+
   /**
    * Get login URL for Kite authentication
    * Handles the case where broker credentials don't exist
@@ -116,6 +190,5 @@ class KiteService {
   }
 }
 
-// Create and export a singleton instance
-const kiteService = new KiteService();
-export default kiteService; 
+const brokerService = new BrokerService();
+export default brokerService; 

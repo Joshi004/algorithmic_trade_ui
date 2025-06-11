@@ -30,7 +30,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import KiteLoginButton from '../Common/KiteLoginButton';
-import kiteService from '../../services/kiteService';
+import brokerService from '../../services/brokerService';
 import toastService from '../../services/toastService';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -59,11 +59,11 @@ const Profile = () => {
     toastService.dismissAll();
     
     try {
-      const result = await kiteService.setSession(request_token);
+      const result = await brokerService.setSession(request_token);
       
       if (result.success) {
         // Session set successfully, now get profile info
-        const profileResult = await kiteService.getProfileInfo();
+        const profileResult = await brokerService.getProfileInfo();
         
         if (profileResult.success && profileResult.data) {
           const profileData = profileResult.data.data || profileResult.data;
@@ -106,7 +106,7 @@ const Profile = () => {
     toastService.dismissAll();
     
     try {
-      const result = await kiteService.getProfileInfo();
+      const result = await brokerService.getProfileInfo();
       
       if (result.success && result.data) {
         const profileData = result.data.data || result.data;

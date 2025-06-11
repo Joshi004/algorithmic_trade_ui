@@ -61,6 +61,9 @@ const BrokerRegistration = () => {
       console.log('Broker registration successful:', response);
       toastService.success('Broker credentials registered successfully! Redirecting...', 'Registration Successful', 3000);
       
+      // Set flag to indicate broker registration completion
+      localStorage.setItem('brokerRegistrationCompleted', 'true');
+      
       // Redirect to home after a short delay
       setTimeout(() => {
         navigate('/home');

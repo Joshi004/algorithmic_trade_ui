@@ -4,6 +4,7 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Container,
   Grid,
   Stack,
@@ -12,14 +13,17 @@ import {
   useTheme
 } from '@mui/material';
 import {
+  Business,
   CheckCircle,
   Error,
-  TrendingUp
+  TrendingUp,
+  Warning
 } from '@mui/icons-material';
 import React, { useEffect, useState } from 'react';
 
 import KiteLoginButton from '../Common/KiteLoginButton';
-import kiteService from '../../services/kiteService';
+import brokerService from '../../services/brokerService';
+import brokerService from '../../services/brokerService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -28,15 +32,43 @@ const AuthenticatedDashboard = () => {
   const navigate = useNavigate();
   const { setAuthenticationFailed } = useAuth();
   const [kiteConnectionStatus, setKiteConnectionStatus] = useState('unknown');
+  const [brokerRegistrationStatus, setBrokerRegistrationStatus] = useState('unknown');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Check Kite connection status on mount
+  // Check Kite connection status and broker registration on mount
   useEffect(() => {
     checkKiteConnection();
+    checkBrokerRegistrationStatus();
+    
+    // Add focus listener to refresh status when user returns to dashboard
+    const handleFocus = () => {
+      checkBrokerRegistrationStatus();
+      checkKiteConnection();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
+  // Additional effect to check for broker registration completion
+  useEffect(() => {
+    // Check if user just completed broker registration
+    const brokerRegistrationCompleted = localStorage.getItem('brokerRegistrationCompleted');
+    if (brokerRegistrationCompleted) {
+      // Remove the flag and refresh status
+      localStorage.removeItem('brokerRegistrationCompleted');
+      setTimeout(() => {
+        checkBrokerRegistrationStatus();
+      }, 1000); // Small delay to ensure backend has processed the registration
+    }
   }, []);
 
   const checkKiteConnection = async () => {
     try {
-      const result = await kiteService.getProfileInfo();
+      const result = await brokerService.getProfileInfo();
       if (result.success && result.data) {
         setKiteConnectionStatus('connected');
       } else {
@@ -53,13 +85,37 @@ const AuthenticatedDashboard = () => {
     }
   };
 
+  const checkBrokerRegistrationStatus = async () => {
+    try {
+      const result = await brokerService.checkBrokerRegistrationStatus();
+      console.log('Broker registration status check result:', result);
+      if (result.success) {
+        const status = result.isRegistered ? 'registered' : 'not_registered';
+        console.log('Setting broker registration status to:', status);
+        setBrokerRegistrationStatus(status);
+      } else {
+        console.log('Broker registration check failed, setting to not_registered');
+        setBrokerRegistrationStatus('not_registered');
+      }
+    } catch (err) {
+      console.error('Error checking broker registration status:', err);
+      setBrokerRegistrationStatus('not_registered');
+    }
+  };
+
   const handleKiteLoginInitiate = () => {
     // Store flag in localStorage to track that login was initiated from dashboard
     localStorage.setItem('kiteLoginFromDashboard', 'true');
   };
 
   const handleCheckConnectionStatus = async () => {
-    await checkKiteConnection();
+    setIsRefreshing(true);
+    try {
+      await checkBrokerRegistrationStatus();
+      await checkKiteConnection();
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   return (
@@ -165,11 +221,25 @@ const AuthenticatedDashboard = () => {
                   
                   <Box display="flex" alignItems="center" justifyContent="space-between">
                     <Typography variant="subtitle2" color="text.secondary">
-                      Market Data
+                      Broker Registration
                     </Typography>
                     <Box display="flex" alignItems="center">
-                      <CheckCircle sx={{ color: 'success.main', mr: 1 }} />
-                      <Chip label="Connected" color="success" size="small" />
+                      {brokerRegistrationStatus === 'registered' ? (
+                        <>
+                          <CheckCircle sx={{ color: 'success.main', mr: 1 }} />
+                          <Chip label="Registered" color="success" size="small" />
+                        </>
+                      ) : brokerRegistrationStatus === 'not_registered' ? (
+                        <>
+                          <Warning sx={{ color: 'warning.main', mr: 1 }} />
+                          <Chip label="Not Registered" color="warning" size="small" />
+                        </>
+                      ) : (
+                        <>
+                          <Error sx={{ color: 'info.main', mr: 1 }} />
+                          <Chip label="Checking..." color="info" size="small" />
+                        </>
+                      )}
                     </Box>
                   </Box>
                   
@@ -197,28 +267,55 @@ const AuthenticatedDashboard = () => {
                     </Box>
                   </Box>
 
-                  {/* Connection Button for Disconnected State */}
-                  {kiteConnectionStatus === 'disconnected' && (
+                  {/* Action Buttons */}
+                  {(brokerRegistrationStatus !== 'unknown' || kiteConnectionStatus !== 'unknown') && (
                     <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${alpha(theme.palette.divider, 0.12)}` }}>
                       <Stack spacing={1.5}>
-                        <KiteLoginButton 
-                          variant="contained"
-                          size="small"
-                          fullWidth
-                          onInitiate={handleKiteLoginInitiate}
-                          sx={{ 
-                            textTransform: 'none',
-                            borderRadius: '8px',
-                            py: 1
-                          }}
-                        >
-                          Connect to Zerodha
-                        </KiteLoginButton>
+                        {/* Show Register Broker Button only if not registered */}
+                        {brokerRegistrationStatus === 'not_registered' && (
+                          <Button 
+                            variant="contained"
+                            size="small"
+                            fullWidth
+                            startIcon={<Business />}
+                            onClick={() => navigate('/broker-registration')}
+                            sx={{ 
+                              textTransform: 'none',
+                              borderRadius: '8px',
+                              py: 1,
+                              bgcolor: 'warning.main',
+                              '&:hover': {
+                                bgcolor: 'warning.dark'
+                              }
+                            }}
+                          >
+                            Register Broker
+                          </Button>
+                        )}
                         
+                        {/* Show Connect to Zerodha Button if registered but not connected */}
+                        {brokerRegistrationStatus === 'registered' && kiteConnectionStatus === 'disconnected' && (
+                          <KiteLoginButton 
+                            variant="contained"
+                            size="small"
+                            fullWidth
+                            onInitiate={handleKiteLoginInitiate}
+                            sx={{ 
+                              textTransform: 'none',
+                              borderRadius: '8px',
+                              py: 1
+                            }}
+                          >
+                            Connect to Zerodha
+                          </KiteLoginButton>
+                        )}
+                        
+                        {/* Always show Check Status button */}
                         <Button 
                           variant="outlined" 
                           size="small"
                           onClick={handleCheckConnectionStatus}
+                          disabled={isRefreshing}
                           fullWidth
                           sx={{ 
                             textTransform: 'none',
@@ -226,7 +323,14 @@ const AuthenticatedDashboard = () => {
                             py: 1
                           }}
                         >
-                          Check Status
+                          {isRefreshing ? (
+                            <Box display="flex" alignItems="center">
+                              <CircularProgress size={16} sx={{ mr: 1 }} />
+                              Refreshing...
+                            </Box>
+                          ) : (
+                            'Refresh Status'
+                          )}
                         </Button>
                       </Stack>
                     </Box>
