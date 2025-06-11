@@ -23,7 +23,6 @@ import React, { useEffect, useState } from 'react';
 
 import KiteLoginButton from '../Common/KiteLoginButton';
 import brokerService from '../../services/brokerService';
-import brokerService from '../../services/brokerService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
