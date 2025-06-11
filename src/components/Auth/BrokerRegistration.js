@@ -1,5 +1,4 @@
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -7,6 +6,8 @@ import {
   CircularProgress,
   Container,
   FormControl,
+  IconButton,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Select,
@@ -14,9 +15,11 @@ import {
   Typography
 } from '@mui/material';
 import React, { useState } from 'react';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 import ENDPOINTS from '../../services/endpoints';
 import apiService from '../../services/apiService';
+import toastService from '../../services/toastService';
 import { useNavigate } from 'react-router-dom';
 
 const BrokerRegistration = () => {
@@ -26,8 +29,7 @@ const BrokerRegistration = () => {
     api_secret: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [showApiSecret, setShowApiSecret] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -36,25 +38,19 @@ const BrokerRegistration = () => {
       ...prev,
       [name]: value
     }));
-    // Clear messages when user starts typing
-    if (error) {
-      setError('');
-    }
-    if (success) {
-      setSuccess('');
-    }
+    // Dismiss any existing toasts when user starts typing
+    toastService.dismissAll();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
+    toastService.dismissAll();
 
     try {
       // Validate form data
       if (!formData.api_key || !formData.api_secret) {
-        setError('Please fill in all required fields');
+        toastService.error('Please fill in all required fields', 'Missing Information');
         setLoading(false);
         return;
       }
@@ -63,19 +59,22 @@ const BrokerRegistration = () => {
       const response = await apiService.post(ENDPOINTS.BROKER.REGISTER, formData);
       
       console.log('Broker registration successful:', response);
-      setSuccess('Broker credentials registered successfully!');
+      toastService.success('Broker credentials registered successfully! Redirecting...', 'Registration Successful', 3000);
       
       // Redirect to home after a short delay
       setTimeout(() => {
         navigate('/home');
-      }, 2000);
+      }, 1500);
       
     } catch (err) {
       console.error('Broker registration error:', err);
-      setError(err.message || 'Failed to register broker credentials. Please try again.');
-    } finally {
+      toastService.error(err.message || 'Failed to register broker credentials. Please try again.', 'Registration Failed');
       setLoading(false);
     }
+  };
+
+  const handleToggleApiSecret = () => {
+    setShowApiSecret(!showApiSecret);
   };
 
   const handleCancel = () => {
@@ -101,18 +100,6 @@ const BrokerRegistration = () => {
               Register your broker credentials to enable trading functionality
             </Typography>
             
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-            
-            {success && (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                {success}
-              </Alert>
-            )}
-            
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
               <FormControl fullWidth margin="normal" required>
                 <InputLabel id="broker-name-label">Broker</InputLabel>
@@ -136,6 +123,7 @@ const BrokerRegistration = () => {
                 id="api_key"
                 label="API Key"
                 name="api_key"
+                type="text"
                 autoComplete="off"
                 value={formData.api_key}
                 onChange={handleChange}
@@ -149,13 +137,27 @@ const BrokerRegistration = () => {
                 fullWidth
                 name="api_secret"
                 label="API Secret"
-                type="password"
+                type={showApiSecret ? "text" : "password"}
                 id="api_secret"
                 autoComplete="off"
                 value={formData.api_secret}
                 onChange={handleChange}
                 disabled={loading}
                 helperText="Your broker API secret (kept secure)"
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label="toggle API secret visibility"
+                        onClick={handleToggleApiSecret}
+                        edge="end"
+                        disabled={loading}
+                      >
+                        {showApiSecret ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
               
               <Box sx={{ mt: 3, display: 'flex', gap: 2 }}>

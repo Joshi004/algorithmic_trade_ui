@@ -9,10 +9,10 @@ import GuestRoute from './components/Common/GuestRoute';
 import { Home } from './components/home';
 import Layout from './components/Layout/Layout';
 import Profile from './components/Profile/Profile';
-import ProfileManagement from './components/ProfileManagement/ProfileManagement';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import React from 'react';
 import StockManagement from './components/StockManagement/StockManagement';
+import { Toaster } from 'react-hot-toast';
 import TradeManagement from './components/TradeManagement/TradeManagement';
 
 function RouteWrapper() {
@@ -95,17 +95,6 @@ function RouteWrapper() {
                     </ProtectedRoute>
                 } 
             />
-            <Route 
-                path="/profile-management/*" 
-                element={
-                    <ProtectedRoute>
-                        <Layout>
-                            <ProfileManagement {...defaultProps} />
-                        </Layout>
-                    </ProtectedRoute>
-                } 
-            />
-            <Route 
                 path="/profile" 
                 element={
                     <ProtectedRoute>
@@ -132,6 +121,8 @@ function App() {
                     <RouteWrapper />
                 </Router>
             </AuthProvider>
+            {/* Toast Container */}
+            <Toaster />
         </div>
     );
 }

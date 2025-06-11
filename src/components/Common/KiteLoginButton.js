@@ -1,7 +1,8 @@
-import { Alert, Box, Button, CircularProgress } from '@mui/material';
+import { Box, Button, CircularProgress } from '@mui/material';
 import React, { useState } from 'react';
 
 import kiteService from '../../services/kiteService';
+import toastService from '../../services/toastService';
 import { useNavigate } from 'react-router-dom';
 
 const KiteLoginButton = ({ 
@@ -13,26 +14,30 @@ const KiteLoginButton = ({
   ...props 
 }) => {
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleKiteLogin = async () => {
     setLoading(true);
-    setError('');
+    toastService.dismissAll();
 
     try {
       const result = await kiteService.initiateKiteLogin();
       
       if (!result.success) {
         if (result.error === 'NO_BROKER_CREDENTIALS') {
-          // Redirect to broker registration
-          navigate('/broker-registration');
+          toastService.warning('Please register your broker credentials first. Redirecting...', 'Broker Credentials Required', 3000);
+          // Brief delay before redirect
+          setTimeout(() => {
+            navigate('/broker-registration');
+          }, 2000);
           return;
         }
         
         // Show other errors
-        setError(result.message || 'Failed to initiate Kite login');
+        toastService.error(result.message || 'Failed to initiate Kite login', 'Kite Login Failed');
       } else {
+        toastService.info('Taking you to Zerodha login page...', 'Redirecting to Zerodha', 3000);
+        
         // Call the onInitiate callback if provided
         if (onInitiate && typeof onInitiate === 'function') {
           onInitiate();
@@ -44,7 +49,7 @@ const KiteLoginButton = ({
       
     } catch (err) {
       console.error('Kite login error:', err);
-      setError(err.message || 'An unexpected error occurred');
+      toastService.error(err.message || 'An unexpected error occurred', 'Connection Error');
     } finally {
       setLoading(false);
     }
@@ -52,12 +57,6 @@ const KiteLoginButton = ({
 
   return (
     <Box>
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
-      )}
-      
       <Button
         variant={variant}
         size={size}
