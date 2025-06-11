@@ -9,7 +9,6 @@ import GuestRoute from './components/Common/GuestRoute';
 import { Home } from './components/home';
 import Layout from './components/Layout/Layout';
 import Profile from './components/Profile/Profile';
-import ProfileManagement from './components/ProfileManagement/ProfileManagement';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import React from 'react';
 import StockManagement from './components/StockManagement/StockManagement';
@@ -96,16 +95,7 @@ function RouteWrapper() {
                     </ProtectedRoute>
                 } 
             />
-            <Route 
-                path="/profile-management/*" 
-                element={
-                    <ProtectedRoute>
-                        <Layout>
-                            <ProfileManagement {...defaultProps} />
-                        </Layout>
-                    </ProtectedRoute>
-                } 
-            />
+
             <Route 
                 path="/profile" 
                 element={
@@ -116,6 +106,7 @@ function RouteWrapper() {
                     </ProtectedRoute>
                 } 
             />
+
             
             {/* Default Routes */}
             <Route path="/" element={<Navigate to="/home" replace />} />

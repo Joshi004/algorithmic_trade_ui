@@ -61,7 +61,7 @@ const Layout = ({ children }) => {
       'profile': { label: 'Profile', icon: <Person sx={{ fontSize: 18 }} /> },
       'trade-management': { label: 'Trade Management', icon: <TrendingUp sx={{ fontSize: 18 }} /> },
       'stock-management': { label: 'Stock Management', icon: <Assessment sx={{ fontSize: 18 }} /> },
-      'profile-management': { label: 'Profile Management', icon: <Person sx={{ fontSize: 18 }} /> },
+
       'broker-registration': { label: 'Broker Registration', icon: <Business sx={{ fontSize: 18 }} /> }
     };
 

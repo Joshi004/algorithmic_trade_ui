@@ -82,7 +82,7 @@ Accessible to everyone, regardless of authentication status:
 Require authentication, redirect to login if not authenticated:
 - `/stock-management`
 - `/trade-management` 
-- `/profile-management/*`
+- `/profile`  
 - `/broker-registration`
 
 ### 👤 **Guest Only Routes**
@@ -142,8 +142,8 @@ Redirect or allow access based on rules
   <Route path="/trade-management" element={
     <ProtectedRoute><TradeManagement /></ProtectedRoute>
   } />
-  <Route path="/profile-management/*" element={
-    <ProtectedRoute><ProfileManagement /></ProtectedRoute>
+  <Route path="/profile" element={
+    <ProtectedRoute><Profile /></ProtectedRoute>
   } />
   <Route path="/broker-registration" element={
     <ProtectedRoute><BrokerRegistration /></ProtectedRoute>

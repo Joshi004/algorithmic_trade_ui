@@ -27,24 +27,79 @@ import {
   useTheme
 } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import KiteLoginButton from '../Common/KiteLoginButton';
 import kiteService from '../../services/kiteService';
 import toastService from '../../services/toastService';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
   const theme = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, setAuthenticationFailed } = useAuth();
   const [kiteProfile, setKiteProfile] = useState(null);
   const [kiteConnectionStatus, setKiteConnectionStatus] = useState('unknown');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    checkKiteProfile();
-  }, []);
+    // Handle Kite callback with request_token
+    const query = new URLSearchParams(location.search);
+    const request_token = query.get('request_token');
+    if (request_token) {
+      handleSetSession(request_token);
+    } else {
+      checkKiteProfile();
+    }
+  }, [location.search]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSetSession = async (request_token) => {
+    setLoading(true);
+    toastService.dismissAll();
+    
+    try {
+      const result = await kiteService.setSession(request_token);
+      
+      if (result.success) {
+        // Session set successfully, now get profile info
+        const profileResult = await kiteService.getProfileInfo();
+        
+        if (profileResult.success && profileResult.data) {
+          const profileData = profileResult.data.data || profileResult.data;
+          setKiteProfile(profileData);
+          setKiteConnectionStatus('connected');
+          
+          toastService.success('Successfully connected to Zerodha!', 'Connection Successful');
+          
+          // Handle redirect logic
+          const fromDashboard = localStorage.getItem('kiteLoginFromDashboard');
+          if (fromDashboard === 'true') {
+            localStorage.removeItem('kiteLoginFromDashboard');
+          }
+          
+          // Clean up URL by removing query parameters
+          navigate(location.pathname, { replace: true });
+        } else {
+          throw new Error('Failed to get profile after session setup');
+        }
+      } else {
+        throw new Error(result.message || 'Failed to set session');
+      }
+    } catch (error) {
+      console.error('Set session error:', error);
+      setKiteConnectionStatus('disconnected');
+      setKiteProfile(null);
+      
+      // Clean up localStorage and URL on error
+      localStorage.removeItem('kiteLoginFromDashboard');
+      navigate(location.pathname, { replace: true });
+      
+      toastService.error(error.message || 'Failed to connect to Zerodha. Please try again.', 'Connection Failed');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const checkKiteProfile = async () => {
     setLoading(true);
