@@ -1,5 +1,4 @@
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -13,6 +12,7 @@ import {
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
 
+import toastService from '../../services/toastService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const Login = () => {
@@ -21,7 +21,6 @@ const Login = () => {
     password: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -35,21 +34,19 @@ const Login = () => {
       ...prev,
       [name]: value
     }));
-    // Clear error when user starts typing
-    if (error) {
-      setError('');
-    }
+    // Dismiss any existing toasts when user starts typing
+    toastService.dismissAll();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
+    toastService.dismissAll();
 
     try {
       // Validate form data
       if (!formData.email || !formData.password) {
-        setError('Please fill in all fields');
+        toastService.error('Please fill in all fields', 'Missing Information');
         setLoading(false);
         return;
       }
@@ -57,13 +54,17 @@ const Login = () => {
       // Call login through auth context
       await login(formData);
       
-      // Login successful - redirect to intended destination or home
-      navigate(from, { replace: true });
+      // Show success toast before redirecting
+      toastService.success('Welcome back! Redirecting...', 'Login Successful', 2000);
+      
+      // Brief delay to show success message before redirect
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 500);
       
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Login failed. Please check your credentials.');
-    } finally {
+      toastService.error(err.message || 'Login failed. Please check your credentials.', 'Login Failed');
       setLoading(false);
     }
   };
@@ -86,12 +87,6 @@ const Login = () => {
             <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
               Enter your credentials to access your account
             </Typography>
-            
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
             
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
               <TextField

@@ -1,5 +1,4 @@
 import {
-  Alert,
   Box,
   Button,
   Card,
@@ -19,6 +18,7 @@ import { Cancel, CheckCircle, Info } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import React, { useState } from 'react';
 
+import toastService from '../../services/toastService';
 import { useAuth } from '../../contexts/AuthContext';
 
 const SignUp = () => {
@@ -28,8 +28,6 @@ const SignUp = () => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [showPasswordRules, setShowPasswordRules] = useState(false);
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -73,13 +71,8 @@ const SignUp = () => {
       [name]: value
     }));
     
-    // Clear messages when user starts typing
-    if (error) {
-      setError('');
-    }
-    if (success) {
-      setSuccess('');
-    }
+    // Dismiss any existing toasts when user starts typing
+    toastService.dismissAll();
 
     // Show password rules when user starts typing password
     if (name === 'password' && value.length > 0 && !showPasswordRules) {
@@ -90,13 +83,12 @@ const SignUp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
-    setSuccess('');
+    toastService.dismissAll();
 
     try {
       // Frontend validation
       if (!formData.email || !formData.password || !formData.confirmPassword) {
-        setError('Please fill in all fields');
+        toastService.error('Please fill in all fields', 'Missing Information');
         setLoading(false);
         return;
       }
@@ -104,21 +96,21 @@ const SignUp = () => {
       // Email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.email)) {
-        setError('Please enter a valid email address');
+        toastService.error('Please enter a valid email address', 'Invalid Email');
         setLoading(false);
         return;
       }
 
       // Password validation
       if (!validatePassword(formData.password)) {
-        setError('Password does not meet the security requirements');
+        toastService.error('Password does not meet the security requirements', 'Weak Password');
         setLoading(false);
         return;
       }
 
       // Confirm password validation
       if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match');
+        toastService.error('Passwords do not match', 'Password Mismatch');
         setLoading(false);
         return;
       }
@@ -130,7 +122,7 @@ const SignUp = () => {
       });
       
       console.log('Registration successful:', response);
-      setSuccess('Account created successfully! You can now sign in.');
+      toastService.success('Account created successfully! Redirecting to login...', 'Registration Successful', 3000);
       
       // Clear form
       setFormData({
@@ -140,15 +132,15 @@ const SignUp = () => {
       });
       setShowPasswordRules(false);
       
-      // Redirect to login after a short delay
+      // Redirect to login after a short delay with loading state maintained
       setTimeout(() => {
         navigate('/login');
-      }, 2000);
+        setLoading(false);
+      }, 1000);
       
     } catch (err) {
       console.error('Registration error:', err);
-      setError(err.message || 'Registration failed. Please try again.');
-    } finally {
+      toastService.error(err.message || 'Registration failed. Please try again.', 'Registration Failed');
       setLoading(false);
     }
   };
@@ -171,18 +163,6 @@ const SignUp = () => {
             <Typography variant="body2" color="text.secondary" align="center" sx={{ mb: 3 }}>
               Create your account to start trading
             </Typography>
-            
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
-            
-            {success && (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                {success}
-              </Alert>
-            )}
             
             <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
               <TextField

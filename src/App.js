@@ -13,6 +13,7 @@ import ProfileManagement from './components/ProfileManagement/ProfileManagement'
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import React from 'react';
 import StockManagement from './components/StockManagement/StockManagement';
+import { Toaster } from 'react-hot-toast';
 import TradeManagement from './components/TradeManagement/TradeManagement';
 
 function RouteWrapper() {
@@ -132,6 +133,8 @@ function App() {
                     <RouteWrapper />
                 </Router>
             </AuthProvider>
+            {/* Toast Container */}
+            <Toaster />
         </div>
     );
 }

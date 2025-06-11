@@ -30,6 +30,7 @@ import React, { useEffect, useState } from 'react';
 
 import KiteLoginButton from '../Common/KiteLoginButton';
 import kiteService from '../../services/kiteService';
+import toastService from '../../services/toastService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -40,7 +41,6 @@ const Profile = () => {
   const [kiteProfile, setKiteProfile] = useState(null);
   const [kiteConnectionStatus, setKiteConnectionStatus] = useState('unknown');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   useEffect(() => {
     checkKiteProfile();
@@ -48,7 +48,7 @@ const Profile = () => {
 
   const checkKiteProfile = async () => {
     setLoading(true);
-    setError('');
+    toastService.dismissAll();
     
     try {
       const result = await kiteService.getProfileInfo();
@@ -57,20 +57,25 @@ const Profile = () => {
         const profileData = result.data.data || result.data;
         setKiteProfile(profileData);
         setKiteConnectionStatus('connected');
-        setError('');
       } else {
         setKiteConnectionStatus('disconnected');
         setKiteProfile(null);
+        toastService.warning('Unable to connect to Zerodha. Please check your broker connection.', 'Connection Issue');
       }
     } catch (err) {
       setKiteConnectionStatus('disconnected');
       setKiteProfile(null);
       
       if (err.message && err.message.includes('Authentication failed')) {
-        setAuthenticationFailed();
-        navigate('/login');
+        toastService.error('Your session has expired. Redirecting to login...', 'Authentication Failed', 3000);
+        setTimeout(() => {
+          setAuthenticationFailed();
+          navigate('/login');
+        }, 2000);
         return;
       }
+      
+      toastService.error('Failed to connect to Zerodha. Please try again or check your broker credentials.', 'Connection Error');
     } finally {
       setLoading(false);
     }
@@ -413,11 +418,7 @@ const Profile = () => {
           </Box>
         )}
 
-        {error && (
-          <Alert severity="error" sx={{ borderRadius: '12px' }}>
-            {error}
-          </Alert>
-        )}
+
       </CardContent>
     </Card>
   );
@@ -440,7 +441,7 @@ const Profile = () => {
             {renderTradingCapabilitiesCard()}
 
             {/* Connection Management */}
-            {(kiteConnectionStatus === 'disconnected' || error) && renderConnectionCard()}
+            {kiteConnectionStatus === 'disconnected' && renderConnectionCard()}
           </Stack>
         </Grid>
       </Grid>
