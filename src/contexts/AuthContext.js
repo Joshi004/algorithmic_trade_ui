@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
       () => {
         console.log('AuthContext: Token expired, logging out user');
         setUser(null);
+        sessionStorage.removeItem('user');
         tokenManager.stopTokenManagement();
       },
       // onTokenRefreshed callback  
@@ -47,8 +48,21 @@ export const AuthProvider = ({ children }) => {
 
   const checkAuthStatus = async () => {
     try {
-      // Simply check session storage for authentication status
+      // Check session storage for authentication status and user data
       console.log('AuthContext: Checking authentication status from session storage');
+      
+      // Restore user data from session storage if available
+      const storedUser = sessionStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          console.log('AuthContext: Restored user data from session storage:', userData);
+          setUser(userData);
+        } catch (parseError) {
+          console.error('AuthContext: Failed to parse stored user data:', parseError);
+          sessionStorage.removeItem('user');
+        }
+      }
     } catch (error) {
       console.log('Auth check failed:', error.message);
     } finally {
@@ -67,6 +81,9 @@ export const AuthProvider = ({ children }) => {
       
       if (response.user) {
         setUser(response.user);
+        // Save user data to session storage for persistence across page refreshes
+        sessionStorage.setItem('user', JSON.stringify(response.user));
+        console.log('AuthContext: Saved user data to session storage:', response.user);
       }
 
       // Start proactive token management if token info is available
@@ -80,6 +97,7 @@ export const AuthProvider = ({ children }) => {
       return response;
     } catch (error) {
       setUser(null);
+      sessionStorage.removeItem('user');
       tokenManager.stopTokenManagement();
       throw error;
     }
@@ -104,6 +122,7 @@ export const AuthProvider = ({ children }) => {
       console.error('Logout error:', error);
     } finally {
       setUser(null);
+      sessionStorage.removeItem('user');
       tokenManager.stopTokenManagement();
       // Don't redirect here as apiService.logout() handles it
     }
@@ -111,6 +130,7 @@ export const AuthProvider = ({ children }) => {
 
   const setAuthenticationFailed = () => {
     setUser(null);
+    sessionStorage.removeItem('user');
     tokenManager.stopTokenManagement();
   };
 

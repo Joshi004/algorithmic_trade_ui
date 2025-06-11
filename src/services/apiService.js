@@ -282,7 +282,18 @@ class ApiService {
       const error = await response.json().catch(() => {
         return { message: response.statusText };
       });
-      throw new Error(error.message || error.error || 'Login failed');
+      
+      // Extract error message from different possible formats
+      let errorMessage = 'Login failed';
+      if (error.non_field_errors && Array.isArray(error.non_field_errors) && error.non_field_errors.length > 0) {
+        errorMessage = error.non_field_errors[0];
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (error.error) {
+        errorMessage = error.error;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();

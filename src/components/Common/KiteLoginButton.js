@@ -15,10 +15,12 @@ const KiteLoginButton = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const navigate = useNavigate();
 
   const handleKiteLogin = async () => {
     setLoading(true);
+    setIsConnecting(true);
     toastService.dismissAll();
 
     try {
@@ -30,6 +32,7 @@ const KiteLoginButton = ({
           
           // Set navigation loading state
           setLoading(false);
+          setIsConnecting(false);
           setIsNavigating(true);
           
           // Brief delay before redirect
@@ -42,23 +45,30 @@ const KiteLoginButton = ({
         
         // Show other errors
         toastService.error(result.message || 'Failed to initiate Kite login', 'Kite Login Failed');
+        setLoading(false);
+        setIsConnecting(false);
       } else {
+        // API succeeded, show connecting state briefly then redirect
         toastService.info('Taking you to Zerodha login page...', 'Redirecting to Zerodha', 3000);
         
         // Call the onInitiate callback if provided
         if (onInitiate && typeof onInitiate === 'function') {
           onInitiate();
         }
+        
+        // Show connecting state for 1 second before the redirect completes
+        setTimeout(() => {
+          setLoading(false);
+          setIsConnecting(false);
+          // The redirect happens in the brokerService.initiateKiteLogin and user will leave the page
+        }, 1000);
       }
-      
-      // If successful, the user will be redirected to Kite login
-      // No need to do anything here as the redirect happens in the service
       
     } catch (err) {
       console.error('Kite login error:', err);
       toastService.error(err.message || 'An unexpected error occurred', 'Connection Error');
-    } finally {
       setLoading(false);
+      setIsConnecting(false);
     }
   };
 
@@ -69,18 +79,37 @@ const KiteLoginButton = ({
         size={size}
         fullWidth={fullWidth}
         onClick={handleKiteLogin}
-        disabled={loading || isNavigating}
+        disabled={loading || isNavigating || isConnecting}
         {...props}
       >
-        {loading || isNavigating ? (
+        {loading || isNavigating || isConnecting ? (
           <Box display="flex" alignItems="center">
             <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-            {loading ? 'Connecting...' : 'Redirecting...'}
+            {isConnecting ? 'Connecting...' : isNavigating ? 'Redirecting...' : 'Connecting...'}
           </Box>
         ) : (
           children
         )}
       </Button>
+
+      {/* Full Page Loading Overlay for Connection */}
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          flexDirection: 'column',
+          gap: 2
+        }}
+        open={isConnecting}
+      >
+        <CircularProgress color="inherit" size={60} />
+        <Typography variant="h6" color="inherit">
+          Connecting to Zerodha
+        </Typography>
+        <Typography variant="body2" color="inherit" sx={{ opacity: 0.8 }}>
+          Please wait while we establish connection...
+        </Typography>
+      </Backdrop>
 
       {/* Full Page Loading Overlay for Navigation */}
       <Backdrop

@@ -4,21 +4,23 @@ import {
   Business,
   CheckCircle,
   Email,
-  Error,
   Person,
   Refresh,
   Security,
   Settings,
-  TrendingUp
+  TrendingUp,
+  Warning
 } from '@mui/icons-material';
 import {
   Alert,
   Avatar,
+  Backdrop,
   Box,
   Button,
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Grid,
   Paper,
   Stack,
@@ -42,6 +44,7 @@ const Profile = () => {
   const [kiteProfile, setKiteProfile] = useState(null);
   const [kiteConnectionStatus, setKiteConnectionStatus] = useState('unknown');
   const [loading, setLoading] = useState(false);
+  const [isProcessingConnection, setIsProcessingConnection] = useState(false);
 
   useEffect(() => {
     // Handle Kite callback with request_token
@@ -56,7 +59,10 @@ const Profile = () => {
 
   const handleSetSession = async (request_token) => {
     setLoading(true);
+    setIsProcessingConnection(true);
     toastService.dismissAll();
+    
+    const startTime = Date.now();
     
     try {
       const result = await brokerService.setSession(request_token);
@@ -67,19 +73,29 @@ const Profile = () => {
         
         if (profileResult.success && profileResult.data) {
           const profileData = profileResult.data.data || profileResult.data;
-          setKiteProfile(profileData);
-          setKiteConnectionStatus('connected');
           
-          toastService.success('Successfully connected to Zerodha!', 'Connection Successful');
+          // Calculate elapsed time and ensure minimum 2-second delay
+          const elapsedTime = Date.now() - startTime;
+          const remainingTime = Math.max(0, 2000 - elapsedTime);
           
-          // Handle redirect logic
-          const fromDashboard = localStorage.getItem('kiteLoginFromDashboard');
-          if (fromDashboard === 'true') {
-            localStorage.removeItem('kiteLoginFromDashboard');
-          }
-          
-          // Clean up URL by removing query parameters
-          navigate(location.pathname, { replace: true });
+          // Wait for remaining time before completing the connection
+          setTimeout(() => {
+            setKiteProfile(profileData);
+            setKiteConnectionStatus('connected');
+            setIsProcessingConnection(false);
+            
+            toastService.success('Successfully connected to Zerodha!', 'Connection Successful');
+            
+            // Handle redirect logic
+            const fromDashboard = localStorage.getItem('kiteLoginFromDashboard');
+            if (fromDashboard === 'true') {
+              localStorage.removeItem('kiteLoginFromDashboard');
+            }
+            
+            // Clean up URL by removing query parameters
+            navigate(location.pathname, { replace: true });
+            setLoading(false);
+          }, remainingTime);
         } else {
           throw new Error('Failed to get profile after session setup');
         }
@@ -90,13 +106,13 @@ const Profile = () => {
       console.error('Set session error:', error);
       setKiteConnectionStatus('disconnected');
       setKiteProfile(null);
+      setIsProcessingConnection(false);
       
       // Clean up localStorage and URL on error
       localStorage.removeItem('kiteLoginFromDashboard');
       navigate(location.pathname, { replace: true });
       
       toastService.error(error.message || 'Failed to connect to Zerodha. Please try again.', 'Connection Failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -181,7 +197,7 @@ const Profile = () => {
               />
             ) : kiteConnectionStatus === 'disconnected' ? (
               <Chip 
-                icon={<Error />}
+                icon={<Warning />}
                 label="Disconnected"
                 color="warning"
                 variant="filled"
@@ -479,28 +495,49 @@ const Profile = () => {
   );
 
   return (
-    <Box sx={{ p: 3 }}>
-      <Grid container spacing={3}>
-        {/* Left Sidebar */}
-        <Grid item xs={12} lg={3}>
-          {renderUserSummaryCard()}
+    <>
+      <Box sx={{ p: 3 }}>
+        <Grid container spacing={3}>
+          {/* Left Sidebar */}
+          <Grid item xs={12} lg={3}>
+            {renderUserSummaryCard()}
+          </Grid>
+
+          {/* Right Main Content */}
+          <Grid item xs={12} lg={9}>
+            <Stack spacing={3}>
+              {/* Account Details */}
+              {renderAccountDetailsCard()}
+
+              {/* Trading Capabilities */}
+              {renderTradingCapabilitiesCard()}
+
+              {/* Connection Management */}
+              {kiteConnectionStatus === 'disconnected' && renderConnectionCard()}
+            </Stack>
+          </Grid>
         </Grid>
+      </Box>
 
-        {/* Right Main Content */}
-        <Grid item xs={12} lg={9}>
-          <Stack spacing={3}>
-            {/* Account Details */}
-            {renderAccountDetailsCard()}
-
-            {/* Trading Capabilities */}
-            {renderTradingCapabilitiesCard()}
-
-            {/* Connection Management */}
-            {kiteConnectionStatus === 'disconnected' && renderConnectionCard()}
-          </Stack>
-        </Grid>
-      </Grid>
-    </Box>
+      {/* Connection Processing Backdrop */}
+      <Backdrop
+        sx={{ 
+          color: '#fff', 
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          flexDirection: 'column',
+          gap: 2
+        }}
+        open={isProcessingConnection}
+      >
+        <CircularProgress color="inherit" size={60} />
+        <Typography variant="h6" color="inherit">
+          Processing Zerodha Connection
+        </Typography>
+        <Typography variant="body2" color="inherit" sx={{ opacity: 0.8 }}>
+          Please wait while we complete your connection...
+        </Typography>
+      </Backdrop>
+    </>
   );
 };
 

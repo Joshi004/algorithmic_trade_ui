@@ -72,7 +72,9 @@ const Login = () => {
       
     } catch (err) {
       console.error('Login error:', err);
-      toastService.error(err.message || 'Login failed. Please check your credentials.', 'Login Failed');
+      // Use the actual error message from the backend instead of a generic message
+      const errorMessage = err.message || 'hard Invalid email or password';
+      toastService.error(errorMessage, 'Login Failed');
       setLoading(false);
     }
   };
