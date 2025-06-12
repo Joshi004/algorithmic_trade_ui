@@ -1,142 +1,130 @@
-import React from "react";
-import Select from "react-select";
-import { Icon } from "semantic-ui-react";
-import "./SearchComponent.scss";
-import { SearchComponentHelper } from "./SearchComponentHelper.js";
-import Loader from "../../Common/Loader/Loader"
-class SearchComponent extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      keyValuePairs: { ...this.props.defaultSelection }, // Object to store key-value pairs
-      key: this.props.defaultKey || "", // Current key input by user
-      value: "", // Current value input by user
-      error: null, // Error message
-      duplicateKey: null, // Key that is a duplicate
+import {
+  ActiveFilters,
+  AddFilterForm,
+  ErrorDisplay,
+  SearchFooter,
+  SearchHeader
+} from './components';
+import {
+  Paper,
+  alpha,
+  useTheme
+} from '@mui/material';
+import React, { useCallback, useEffect, useState } from 'react';
+
+import { SearchComponentHelper } from './SearchComponentHelper.js';
+
+const SearchComponent = ({ 
+  defaultSelection = {}, 
+  handleSearch, 
+  keys = [], 
+  isLoading = false 
+}) => {
+  const theme = useTheme();
+  const [keyValuePairs, setKeyValuePairs] = useState({ ...defaultSelection });
+  const [selectedKey, setSelectedKey] = useState('');
+  const [inputValue, setInputValue] = useState('');
+  const [error, setError] = useState(null);
+
+  // Transform keys to autocomplete options
+  const keyOptions = keys.map(option => ({
+    value: option,
+    label: SearchComponentHelper.toTitleCase(option),
+  }));
+
+  // Initial search on component mount
+  useEffect(() => {
+    if (Object.keys(defaultSelection).length > 0) {
+      handleSearch(defaultSelection);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleAddFilter = useCallback(() => {
+    if (!selectedKey || !inputValue.trim()) {
+      setError('Please select a filter key and enter a value');
+      return;
+    }
+
+    if (keyValuePairs[selectedKey]) {
+      setError(`Filter for "${SearchComponentHelper.toTitleCase(selectedKey)}" already exists`);
+      return;
+    }
+
+    const newKeyValuePairs = { 
+      ...keyValuePairs, 
+      [selectedKey]: inputValue.trim() 
     };
-    this.keyOptions = this.props.keys.map((option) => ({
-      value: option,
-      label: SearchComponentHelper.toTitleCase(option),
-    }));
-  }
 
-  componentDidMount() {
-    console.log("sneindg from did mount ",this.state.keyValuePairs)
-    this.props.handleSearch(this.state.keyValuePairs);
-  }
+    setKeyValuePairs(newKeyValuePairs);
+    setSelectedKey('');
+    setInputValue('');
+    setError(null);
+    
+    handleSearch(newKeyValuePairs);
+  }, [selectedKey, inputValue, keyValuePairs, handleSearch]);
 
-  handleInputChange = (event) => {
-    this.setState({
-      [event.target.name]: event.target.value,
-    });
-  };
+  const handleRemoveFilter = useCallback((keyToRemove) => {
+    const newKeyValuePairs = { ...keyValuePairs };
+    delete newKeyValuePairs[keyToRemove];
+    
+    setKeyValuePairs(newKeyValuePairs);
+    setError(null);
+    
+    handleSearch(newKeyValuePairs);
+  }, [keyValuePairs, handleSearch]);
 
-  handleKeyChange = (selectedOption) => {
-    this.setState({
-      key: selectedOption.value,
-    });
-  };
-
-  handleAddClick = () => {
-    const { key, value, keyValuePairs } = this.state;
-    if (key && value) {
-      // If both key and value are provided by user...
-      if (!keyValuePairs[key]) {
-        // If key is not already in keyValuePairs...
-        let newKeyValuePair = { ...keyValuePairs, [key]: value };
-        this.setState(
-          {
-            // Add new key-value pair to keyValuePairs and reset key, value, error, and duplicateKey in state
-            keyValuePairs: newKeyValuePair,
-            key: "",
-            value: "",
-            error: null,
-            duplicateKey: null,
-          },
-          () => {
-            console.log("On Add sending ",newKeyValuePair)
-            this.props.handleSearch(newKeyValuePair);
-          }
-        );
-      } else {
-        // If key is already in keyValuePairs...
-        this.setState({
-          error: "Invalid or duplicate key-value pair",
-          duplicateKey: key,
-        }); // Set error message and duplicateKey in state
-      }
+  const handleKeyPress = (event) => {
+    if (event.key === 'Enter') {
+      handleAddFilter();
     }
   };
 
-  handleDeleteClick = (keyToDelete) => {
-    const { keyValuePairs } = this.state;
-    const newKeyValuePairs = { ...keyValuePairs }; // Copy keyValuePairs from state
-    delete newKeyValuePairs[keyToDelete]; // Delete the key-value pair with the given key from the copy of keyValuePairs
-    this.setState(
-      { keyValuePairs: newKeyValuePairs, key: keyToDelete },
-      () => {
-        console.log("sneindg ",newKeyValuePairs)
-        this.props.handleSearch(newKeyValuePairs);
-      }
-    ); // Update keyValuePairs in state with the modified copy of keyValuePairs
-  };
+  const handleKeyChange = useCallback((key) => {
+    setSelectedKey(key);
+    setError(null);
+  }, []);
 
-  render() {
-    const { key, value, keyValuePairs, error, duplicateKey } = this.state; // Destructure state for easier access to properties
-    return (
-      <div className="search-component">
-        <div className="header-container">
-          {/* Display the header prop */}
-          <h2>{this.props.header}</h2>
-          <div className="cards-container">
-            {Object.entries(keyValuePairs).map(([key, value]) => (
-              <div
-                className={`card ${duplicateKey === key ? "highlight" : ""}`}
-                key={key}
-              >
-                <div>
-                  <strong>{key}:</strong> {value}
-                </div>
-                <button
-                  className="delete-button"
-                  onClick={() => this.handleDeleteClick(key)}
-                >
-                  <Icon name="close" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="input-container">
-          <Select
-            className="select-input"
-            name="key"
-            value={this.keyOptions.find((option) => option.value === key)}
-            onChange={this.handleKeyChange}
-            options={this.keyOptions}
-            placeholder="Select a key"
-            isSearchable
-          />
-          <input
-            type="text"
-            name="value"
-            value={value}
-            onChange={this.handleInputChange}
-            placeholder="Value"
-          />
-          <div className="buttonDiv">
-          {this.props.isLoading ? (
-            <Loader /> // Display the loader if isLoading prop is true
-          ) : (
-            <button onClick={this.handleAddClick}>
-              <Icon name="plus" />
-            </button>
-          )}
-          </div>
-        </div>
-        {error && <div className="error">{error}</div>}
-      </div>
-    );
-  }
-}
+  const handleValueChange = useCallback((value) => {
+    setInputValue(value);
+    setError(null);
+  }, []);
+
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        p: 2,
+        background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.02)} 0%, ${alpha(theme.palette.secondary.main, 0.01)} 100%)`,
+      }}
+    >
+      {/* Search Header */}
+      <SearchHeader isLoading={isLoading} />
+
+      {/* Active Filters */}
+      <ActiveFilters 
+        keyValuePairs={keyValuePairs} 
+        onRemoveFilter={handleRemoveFilter} 
+      />
+
+      {/* Add Filter Form */}
+      <AddFilterForm
+        keyOptions={keyOptions}
+        selectedKey={selectedKey}
+        inputValue={inputValue}
+        isLoading={isLoading}
+        onKeyChange={handleKeyChange}
+        onValueChange={handleValueChange}
+        onKeyPress={handleKeyPress}
+        onAddFilter={handleAddFilter}
+      />
+
+      {/* Error Display */}
+      <ErrorDisplay error={error} />
+
+      {/* Helper Footer */}
+      <SearchFooter />
+    </Paper>
+  );
+};
+
 export default SearchComponent;
