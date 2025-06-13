@@ -44,6 +44,7 @@ const StatsDisplay = ({
           color={lastUpdate === 'Never' ? 'warning' : 'success'}
           size="small"
           sx={{ height: 20, fontSize: '0.65rem', fontWeight: 'medium' }}
+          onClick={() => { }}
         />
       </Box>
     </Stack>

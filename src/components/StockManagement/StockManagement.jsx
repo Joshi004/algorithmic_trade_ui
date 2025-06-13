@@ -64,7 +64,7 @@ const StockManagement = () => {
         page_no: page,
         page_length: pageLength,
         order_by: 'name',
-        sort_type: 'asc'
+        sort_type: 'desc'
       };
       
       const searchString = getSearchString(searchParams);
