@@ -1,22 +1,3 @@
 .trade-session-grid-component {
-  .trade-session-grid-header {
-    display: block;
-
-    .init-button {
-      position: absolute;
-      top: -20px;
-      right: 0;
-
-      .plus-icon {
-        padding-left: 10px;
-        font-weight: bold;
-      }
-    }
-  }
-
-  .trade-session-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-  }
+  // Main container styles handled by Material-UI Box component
 }
