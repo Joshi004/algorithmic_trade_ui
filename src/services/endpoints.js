@@ -2,11 +2,26 @@
  * Centralized API endpoints for the application
  */
 const ENDPOINTS = {
+  // Authentication endpoints
+  AUTH: {
+    LOGIN: 'login',
+    REGISTER: 'register',
+    REFRESH_TOKEN: 'refresh-token',
+    LOGOUT: 'logout',
+  },
+
   // Kite integration endpoints
   KITE: {
-    GET_LOGIN_URL: 'tmu/get_login_url',
-    SET_SESSION: 'tmu/set_session',
-    GET_PROFILE_INFO: 'tmu/get_profile_info',
+    GET_LOGIN_URL: 'integration/get_login_url',
+    SET_SESSION: 'integration/set_session',
+    GET_PROFILE_INFO: 'integration/get_profile_info',
+  },
+
+  // Broker management endpoints
+  BROKER: {
+    REGISTER: 'integration/register_broker',
+    GET_USER_BROKERS: 'integration/get_user_brokers',
+    SET_DEFAULT: 'integration/set_default_broker',
   },
   
   // Trade session endpoints
@@ -28,17 +43,17 @@ const ENDPOINTS = {
   
   // Portfolio endpoints
   PORTFOLIO: {
-    GET_HOLDINGS: 'tmu/get_holdings',
-    GET_POSITIONS: 'tmu/get_positions',
-    GET_ORDERS: 'tmu/get_orders',
-    GET_ORDERS_TRADES: 'tmu/get_orders_trades',
-    GET_ORDER_HISTORY: 'tmu/get_order_history',
-    PLACE_ORDER: 'tmu/place_order',
+    GET_HOLDINGS: 'integration/get_holdings',
+    GET_POSITIONS: 'integration/get_positions',
+    GET_ORDERS: 'integration/get_orders',
+    GET_ORDERS_TRADES: 'integration/get_order_trades',
+    GET_ORDER_HISTORY: 'integration/get_order_history',
+    PLACE_ORDER: 'integration/place_order',
   },
   
   // Trade endpoints
   TRADES: {
-    GET_QUOTES: 'tmu/get_quotes',
+    GET_QUOTES: 'integration/get_quotes',
     GET_ALL_TRADES_INFO: 'tmu/get_all_trades_info',
   },
   

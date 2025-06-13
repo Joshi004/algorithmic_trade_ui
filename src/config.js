@@ -4,7 +4,8 @@ const ENV = process.env.REACT_APP_ENV || 'development';
 // Configuration for different environments
 const environments = {
   development: {
-    apiBaseUrl: process.env.REACT_APP_API_URL || 'http://127.0.0.1:18000',
+    // Use relative paths in development - React proxy will handle backend routing
+    apiBaseUrl: '',
   },
   testing: {
     apiBaseUrl: process.env.REACT_APP_API_URL || 'http://test-api.algorithmic-trade.example',
@@ -21,6 +22,12 @@ const config = environments[ENV];
 export const getApiUrl = (endpoint) => {
   // Make sure endpoint starts with '/'
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
+  // In development with proxy, use relative paths
+  if (ENV === 'development' && !config.apiBaseUrl) {
+    return normalizedEndpoint;
+  }
+  
   return `${config.apiBaseUrl}${normalizedEndpoint}`;
 };
 
