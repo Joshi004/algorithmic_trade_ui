@@ -27,8 +27,9 @@ const ENDPOINTS = {
   // Trade session endpoints
   TRADE_SESSIONS: {
     INITIATE: 'tmu/initiate_trade_session',
-    GET_ALL: 'tmu/get_trade_sessions',
+    GET_ALL: 'tmu/get_user_trade_sessions',
     GET_PARAMS: 'tmu/get_new_session_param_options',
+    PAUSE: 'tmu/pause_trade_session',
     RESUME: 'tmu/resume_trade_session',
     CHECK_ACTIVE: 'tmu/session_active',
     TERMINATE: 'tmu/terminate_trade_session',

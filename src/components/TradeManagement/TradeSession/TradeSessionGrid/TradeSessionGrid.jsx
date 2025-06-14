@@ -13,6 +13,7 @@ import React, { Component } from "react";
 import ENDPOINTS from "../../../../services/endpoints";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import TradeSessionForm from "./TradeSessionForm/TradeSessionForm";
+import TradeSessionsList from "./TradeSessionsList/TradeSessionsList";
 import apiService from "../../../../services/apiService";
 import { styled } from "@mui/material/styles";
 
@@ -31,13 +32,19 @@ const HeaderBox = styled(Box)(({ theme }) => ({
 class TradeSessionGrid extends Component {
   constructor(props) {
     super(props);
-    this.state = { modalOpen: false };
+    this.state = { 
+      modalOpen: false,
+      refreshTrigger: 0 // Used to trigger refresh of trade sessions list
+    };
   }
 
   handleFormSubmit = async (formData) => {
     try {
       await this.initiateTradeSession(formData);
-      this.setState({ modalOpen: false });
+      this.setState({ 
+        modalOpen: false,
+        refreshTrigger: this.state.refreshTrigger + 1 // Trigger refresh of trade sessions list
+      });
     } catch (error) {
       console.error("Failed to initiate trade session:", error);
     }
@@ -63,7 +70,7 @@ class TradeSessionGrid extends Component {
   };
 
   render() {
-    const { modalOpen } = this.state;
+    const { modalOpen, refreshTrigger } = this.state;
 
     return (
       <Box className="trade-session-grid-component" p={3}>
@@ -73,7 +80,7 @@ class TradeSessionGrid extends Component {
               Trade Sessions
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              Create your algorithmic trading sessions
+              Create and manage your algorithmic trading sessions
             </Typography>
           </Box>
           <Button
@@ -93,18 +100,13 @@ class TradeSessionGrid extends Component {
           </Button>
         </HeaderBox>
 
-        <Box 
-          display="flex" 
-          justifyContent="center" 
-          alignItems="center" 
-          minHeight="300px"
-          textAlign="center"
-        >
-          <Typography variant="h6" color="text.secondary">
-            Click "New Session" to create your first algorithmic trading session
-          </Typography>
-        </Box>
+        {/* Trade Sessions List */}
+        <TradeSessionsList 
+          sessionParameters={this.props.sessionParameters}
+          refreshTrigger={refreshTrigger}
+        />
 
+        {/* New Session Dialog */}
         <Dialog 
           open={modalOpen} 
           onClose={this.handleClose}
