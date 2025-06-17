@@ -156,6 +156,17 @@ class TradeSessionsList extends Component {
     }));
   };
 
+  handleSessionUpdate = (sessionId, updatedSessionData) => {
+    // Update the trade session in the local state with the detailed data
+    this.setState(prevState => ({
+      tradeSessions: prevState.tradeSessions.map(session => 
+        session.id === sessionId 
+          ? { ...session, ...updatedSessionData }
+          : session
+      )
+    }));
+  };
+
   renderSkeletonLoading = () => {
     return (
       <Box>
@@ -249,6 +260,7 @@ class TradeSessionsList extends Component {
                   session={session}
                   sessionParameters={sessionParameters}
                   onAction={this.handleSessionAction}
+                  onSessionUpdate={this.handleSessionUpdate}
                 />
               ))}
             </Box>

@@ -1,26 +1,35 @@
 import {
+  AccessTime as AccessTimeIcon,
+  Settings as AlgorithmIcon,
+  Analytics as AnalyticsIcon,
+  Assessment as AssessmentIcon,
+  ExpandMore as ExpandMoreIcon,
+  Pause as PauseIcon,
+  PlayArrow as PlayArrowIcon,
+  Refresh as RefreshIcon,
+  Schedule as ScheduleIcon,
+  ShowChart as ShowChartIcon,
+  Stop as StopIcon,
+  TrendingDown as TrendingDownIcon,
+  TrendingUp as TrendingUpIcon
+} from '@mui/icons-material';
+import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
   Box,
   Button,
   Chip,
+  CircularProgress,
   Divider,
   Grid,
+  IconButton,
   Typography
 } from '@mui/material';
-import {
-  Settings as AlgorithmIcon,
-  Analytics as AnalyticsIcon,
-  ExpandMore as ExpandMoreIcon,
-  Pause as PauseIcon,
-  PlayArrow as PlayArrowIcon,
-  Schedule as ScheduleIcon,
-  Stop as StopIcon,
-  TrendingUp as TrendingUpIcon
-} from '@mui/icons-material';
 import React, { Component } from 'react';
 
+import ENDPOINTS from '../../../../../services/endpoints';
+import apiService from '../../../../../services/apiService';
 import { styled } from '@mui/material/styles';
 
 // Styled components
@@ -88,7 +97,106 @@ const InfoBox = styled(Box)(({ theme }) => ({
   marginBottom: theme.spacing(2),
 }));
 
+const StatsCard = styled(Box)(({ theme }) => ({
+  padding: theme.spacing(2.5),
+  backgroundColor: theme.palette.background.paper,
+  borderRadius: theme.spacing(1.5),
+  border: `1px solid ${theme.palette.divider}`,
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  textAlign: 'center',
+  transition: theme.transitions.create(['transform', 'box-shadow'], {
+    duration: theme.transitions.duration.shorter,
+  }),
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: theme.shadows[4],
+  },
+}));
+
+const StatsValue = styled(Typography)(({ theme, color }) => ({
+  fontWeight: 700,
+  fontSize: '1.5rem',
+  marginBottom: theme.spacing(0.5),
+  color: color || theme.palette.text.primary,
+}));
+
+const StatsLabel = styled(Typography)(({ theme }) => ({
+  color: theme.palette.text.secondary,
+  fontSize: '0.875rem',
+  fontWeight: 500,
+}));
+
+const ProfitBox = styled(Box)(({ theme, isprofit }) => {
+  const isPositive = isprofit === 'true';
+  return {
+    padding: theme.spacing(1.5, 2),
+    borderRadius: theme.spacing(1),
+    backgroundColor: isPositive 
+      ? theme.palette.success.light + '20' 
+      : theme.palette.error.light + '20',
+    border: `1px solid ${isPositive ? theme.palette.success.main : theme.palette.error.main}`,
+    display: 'flex',
+    alignItems: 'center',
+    gap: theme.spacing(0.5),
+  };
+});
+
 class TradeSessionAccordion extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      sessionDetails: null,
+      loadingDetails: false,
+      detailsError: null,
+      expanded: false,
+    };
+  }
+
+  fetchSessionDetails = async (sessionId) => {
+    if (this.state.loadingDetails) return;
+
+    this.setState({ loadingDetails: true, detailsError: null });
+
+    try {
+      const response = await apiService.get(
+        `${ENDPOINTS.TRADE_SESSIONS.GET_DETAILS}?trade_session_id=${sessionId}`
+      );
+
+      // Extract session details from response (consistent with other API calls)
+      const sessionData = response?.data || response;
+      
+      this.setState({ 
+        sessionDetails: sessionData,
+        loadingDetails: false 
+      });
+      
+      // If onSessionUpdate is provided, update the parent component's session data
+      if (this.props.onSessionUpdate) {
+        this.props.onSessionUpdate(sessionId, sessionData);
+      }
+    } catch (error) {
+      console.error('Error fetching session details:', error);
+      this.setState({ 
+        detailsError: error.message || 'Failed to load session details',
+        loadingDetails: false 
+      });
+    }
+  };
+
+  handleAccordionChange = (event, isExpanded) => {
+    this.setState({ expanded: isExpanded });
+    
+    if (isExpanded && !this.state.sessionDetails) {
+      this.fetchSessionDetails(this.props.session.id);
+    }
+  };
+
+  handleRefreshDetails = () => {
+    this.fetchSessionDetails(this.props.session.id);
+  };
+
   formatDateTime = (dateString) => {
     if (!dateString) return 'N/A';
     const date = new Date(dateString);
@@ -100,6 +208,22 @@ class TradeSessionAccordion extends Component {
       minute: '2-digit',
       hour12: true
     });
+  };
+
+  formatCurrency = (amount) => {
+    if (!amount || amount === 0) return '₹0.00';
+    const formatter = new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    return formatter.format(amount);
+  };
+
+  formatPercentage = (percentage) => {
+    if (percentage === null || percentage === undefined) return '0%';
+    return `${percentage.toFixed(1)}%`;
   };
 
   getAlgorithmName = (algorithmId, algorithmType) => {
@@ -145,6 +269,174 @@ class TradeSessionAccordion extends Component {
     }
   };
 
+  renderDetailedStats = () => {
+    const { sessionDetails, loadingDetails, detailsError } = this.state;
+
+    if (loadingDetails) {
+      return (
+        <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <CircularProgress />
+        </Box>
+      );
+    }
+
+    if (detailsError) {
+      return (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography color="error" variant="body2" gutterBottom>
+            {detailsError}
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={this.handleRefreshDetails}
+            startIcon={<RefreshIcon />}
+          >
+            Retry
+          </Button>
+        </Box>
+      );
+    }
+
+    if (!sessionDetails) {
+      return (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography variant="body2" color="text.secondary">
+            No details available
+          </Typography>
+        </Box>
+      );
+    }
+
+    const {
+      total_trades_executed,
+      total_long_trades,
+      total_short_trades,
+      total_instruments_scanned,
+      active_trades,
+      total_profit,
+      success_percentage,
+      last_activity_at
+    } = sessionDetails;
+
+    const isProfit = total_profit >= 0;
+
+    return (
+      <Box sx={{ width: '100%' }}>
+        {/* Profit/Loss Summary */}
+        <Box sx={{ mb: 3 }}>
+          <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <AssessmentIcon />
+            Performance Summary
+            <IconButton
+              size="small"
+              onClick={this.handleRefreshDetails}
+              disabled={loadingDetails}
+              sx={{ ml: 'auto' }}
+            >
+              <RefreshIcon />
+            </IconButton>
+          </Typography>
+          
+          <ProfitBox isprofit={isProfit.toString()}>
+            {isProfit ? <TrendingUpIcon /> : <TrendingDownIcon />}
+            <Box>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                {this.formatCurrency(total_profit)}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Total Profit/Loss
+              </Typography>
+            </Box>
+            <Box sx={{ ml: 'auto', textAlign: 'right' }}>
+              <Typography variant="h6" sx={{ fontWeight: 700 }}>
+                {this.formatPercentage(success_percentage)}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                Success Rate
+              </Typography>
+            </Box>
+          </ProfitBox>
+        </Box>
+
+        {/* Statistics Grid */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={6} md={3}>
+            <StatsCard>
+              <ShowChartIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+              <StatsValue color="primary.main">
+                {total_trades_executed || 0}
+              </StatsValue>
+              <StatsLabel>Total Trades</StatsLabel>
+            </StatsCard>
+          </Grid>
+          
+          <Grid item xs={6} md={3}>
+            <StatsCard>
+              <TrendingUpIcon sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
+              <StatsValue color="success.main">
+                {total_long_trades || 0}
+              </StatsValue>
+              <StatsLabel>Long Trades</StatsLabel>
+            </StatsCard>
+          </Grid>
+          
+          <Grid item xs={6} md={3}>
+            <StatsCard>
+              <TrendingDownIcon sx={{ fontSize: 40, color: 'error.main', mb: 1 }} />
+              <StatsValue color="error.main">
+                {total_short_trades || 0}
+              </StatsValue>
+              <StatsLabel>Short Trades</StatsLabel>
+            </StatsCard>
+          </Grid>
+          
+          <Grid item xs={6} md={3}>
+            <StatsCard>
+              <AnalyticsIcon sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
+              <StatsValue color="info.main">
+                {total_instruments_scanned || 0}
+              </StatsValue>
+              <StatsLabel>Instruments Scanned</StatsLabel>
+            </StatsCard>
+          </Grid>
+          
+          <Grid item xs={6} md={3}>
+            <StatsCard>
+              <AccessTimeIcon sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
+              <StatsValue color="warning.main">
+                {active_trades || 0}
+              </StatsValue>
+              <StatsLabel>Active Trades</StatsLabel>
+            </StatsCard>
+          </Grid>
+          
+          <Grid item xs={6} md={3}>
+            <StatsCard>
+              <ScheduleIcon sx={{ fontSize: 40, color: 'text.secondary', mb: 1 }} />
+              <StatsValue>
+                {last_activity_at ? 'Recent' : 'None'}
+              </StatsValue>
+              <StatsLabel>Last Activity</StatsLabel>
+            </StatsCard>
+          </Grid>
+        </Grid>
+
+        {/* Last Activity Details */}
+        {last_activity_at && (
+          <InfoBox>
+            <Typography variant="subtitle2" fontWeight="600" gutterBottom>
+              Last Activity
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {this.formatDateTime(last_activity_at)}
+            </Typography>
+          </InfoBox>
+        )}
+      </Box>
+    );
+  };
+
   render() {
     const { session } = this.props;
     const {
@@ -162,7 +454,11 @@ class TradeSessionAccordion extends Component {
     const isDummy = dummy === 1 || dummy === true;
 
     return (
-      <StyledAccordion isdummy={isDummy.toString()}>
+      <StyledAccordion 
+        isdummy={isDummy.toString()}
+        expanded={this.state.expanded}
+        onChange={this.handleAccordionChange}
+      >
         <AccordionSummary
           expandIcon={<ExpandMoreIcon />}
           aria-controls={`session-${id}-content`}
@@ -381,68 +677,8 @@ class TradeSessionAccordion extends Component {
           <Box sx={{ width: '100%' }}>
             <Divider sx={{ mb: 3 }} />
             
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AlgorithmIcon />
-              Additional Details & Actions
-            </Typography>
-            
-            <Grid container spacing={3} sx={{ mb: 3 }}>
-              <Grid item xs={12} md={6}>
-                <InfoBox>
-                  <Typography variant="subtitle2" fontWeight="600" gutterBottom>
-                    Algorithm Details
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Scanning ID:</Typography>
-                      <Typography variant="body2" fontWeight="500">{scanning_algorithm_id}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Initiation ID:</Typography>
-                      <Typography variant="body2" fontWeight="500">{initiation_algorithm_id}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Termination ID:</Typography>
-                      <Typography variant="body2" fontWeight="500">{termination_algorithm_id}</Typography>
-                    </Box>
-                  </Box>
-                </InfoBox>
-              </Grid>
-              
-              <Grid item xs={12} md={6}>
-                <InfoBox>
-                  <Typography variant="subtitle2" fontWeight="600" gutterBottom>
-                    Session Information
-                  </Typography>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Session ID:</Typography>
-                      <Typography variant="body2" fontWeight="500">{id}</Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Mode:</Typography>
-                      <Typography variant="body2" fontWeight="500">
-                        {isDummy ? 'Demo/Paper Trading' : 'Live Trading'}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Started:</Typography>
-                      <Typography variant="body2" fontWeight="500">
-                        {this.formatDateTime(started_at)}
-                      </Typography>
-                    </Box>
-                    {status === 'stopped' && closed_at && (
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography variant="body2" color="text.secondary">Closed:</Typography>
-                        <Typography variant="body2" fontWeight="500">
-                          {this.formatDateTime(closed_at)}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                </InfoBox>
-              </Grid>
-            </Grid>
+            {/* Show detailed statistics instead of basic info */}
+            {this.renderDetailedStats()}
             
             <Divider sx={{ my: 2 }} />
             
