@@ -7,6 +7,7 @@ const ENDPOINTS = {
     LOGIN: 'login',
     REGISTER: 'register',
     REFRESH_TOKEN: 'refresh-token',
+    WEBSOCKET_TOKEN: 'websocket-token',
     LOGOUT: 'logout',
   },
 

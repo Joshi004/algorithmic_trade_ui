@@ -1,10 +1,9 @@
-import React, { Component } from 'react';
+import React, { useEffect, useReducer, useCallback, useRef } from 'react';
 import {
   Box,
   Card,
   CardContent,
   Chip,
-  Divider,
   Grid,
   IconButton,
   Paper,
@@ -14,21 +13,42 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Typography
+  Typography,
+  Switch,
+  FormControlLabel,
+  Breadcrumbs,
+  Link,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Alert,
+  CircularProgress,
+  Badge
 } from '@mui/material';
 import {
-  AccessTime as AccessTimeIcon,
-  Analytics as AnalyticsIcon,
   ArrowBack as BackIcon,
-  Assessment as AssessmentIcon,
+  Home as HomeIcon,
   Refresh as RefreshIcon,
-  ShowChart as ShowChartIcon,
+  TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
-  TrendingUp as TrendingUpIcon
+  Assessment as AssessmentIcon,
+  ShowChart as ShowChartIcon,
+  AccessTime as AccessTimeIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon,
+  Search as SearchIcon,
+  Analytics as AnalyticsIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useNavigate, useParams } from 'react-router-dom';
+import apiService from '../../../../../services/apiService';
+import ENDPOINTS from '../../../../../services/endpoints';
+import { getWsUrl } from '../../../../../config';
+import websocketService from '../../../../../services/websocketService'; // Import our professional WebSocket service
 
+// Styled Components
 const LiveContainer = styled(Box)(({ theme }) => ({
   padding: theme.spacing(3),
   minHeight: '100vh',
@@ -77,304 +97,852 @@ const LiveBadge = styled(Chip)(({ theme }) => ({
   },
 }));
 
-class LiveTradeSessionInner extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      liveData: this.generateMockLiveData(),
-      lastUpdate: new Date(),
+const ScannerLogContainer = styled(Box)(({ theme }) => ({
+  height: '300px',
+  overflowY: 'auto',
+  backgroundColor: theme.palette.grey[50],
+  borderRadius: theme.spacing(1),
+  padding: theme.spacing(1),
+  border: `1px solid ${theme.palette.divider}`,
+}));
+
+// Initial State
+const initialState = {
+  sessionData: null,
+  sessionStats: {
+    totalTrades: 0,
+    activeTrades: 0,
+    closedTrades: 0,
+    successRate: 0,
+    totalProfitLoss: 0,
+  },
+  trades: [],
+  scannerStats: {
+    totalScanned: 0,
+    eligible: 0,
+    notEligible: 0,
+  },
+  scannerLogs: [],
+  filters: {
+    showActive: true,
+    showClosed: true,
+  },
+  loading: {
+    sessionStats: true,
+    trades: true,
+    scannerStats: true,
+  },
+  lastUpdate: new Date(),
+  wsConnected: false,
+  wsGroupName: null,
+};
+
+// Reducer for state management
+const stateReducer = (state, action) => {
+  switch (action.type) {
+    case 'SET_SESSION_DATA':
+      const sessionData = action.payload;
+      return {
+        ...state,
+        sessionData,
+        sessionStats: {
+          totalTrades: sessionData.total_trades_executed || 0,
+          activeTrades: sessionData.active_trades || 0,
+          closedTrades: (sessionData.total_trades_executed || 0) - (sessionData.active_trades || 0),
+          successRate: sessionData.success_percentage || 0,
+          totalProfitLoss: sessionData.total_profit || 0,
+        },
+        scannerStats: {
+          totalScanned: sessionData.total_instruments_scanned || 0,
+          eligible: Math.floor((sessionData.total_instruments_scanned || 0) * 0.1), // Estimate
+          notEligible: Math.floor((sessionData.total_instruments_scanned || 0) * 0.9), // Estimate
+        },
+        loading: { ...state.loading, sessionStats: false, scannerStats: false },
+      };
+    case 'SET_TRADES':
+      return {
+        ...state,
+        trades: action.payload,
+        loading: { ...state.loading, trades: false },
+      };
+    case 'ADD_SCANNER_LOG':
+      return {
+        ...state,
+        scannerLogs: [action.payload, ...state.scannerLogs].slice(0, 50), // Keep only last 50 logs
+      };
+    case 'UPDATE_TRADE':
+      return {
+        ...state,
+        trades: state.trades.map(trade =>
+          trade.id === action.payload.id ? { ...trade, ...action.payload } : trade
+        ),
+      };
+    case 'UPDATE_FILTERS':
+      return {
+        ...state,
+        filters: { ...state.filters, ...action.payload },
+      };
+    case 'SET_LAST_UPDATE':
+      return {
+        ...state,
+        lastUpdate: action.payload,
+      };
+    case 'SET_WS_CONNECTION':
+      return {
+        ...state,
+        wsConnected: action.payload.connected,
+        wsGroupName: action.payload.groupName || state.wsGroupName,
+      };
+    case 'UPDATE_SCANNER_STATS':
+      return {
+        ...state,
+        scannerStats: { ...state.scannerStats, ...action.payload },
+      };
+    default:
+      return state;
+  }
+};
+
+/**
+ * Professional WebSocket Hook for Live Trade Session
+ * 
+ * This hook integrates with our professional WebSocket service to provide real-time updates
+ * for trade sessions. It handles:
+ * - Automatic connection/reconnection using secure subprotocol authentication
+ * - Scanner update subscriptions with proper group management
+ * - Real-time trade updates and statistics
+ * - Clean connection lifecycle management
+ */
+const useWebSocket = (sessionId, sessionData, dispatch) => {
+  const messageHandlerRef = useRef(null);
+  const isSubscribedRef = useRef(false);
+
+  const getGroupName = (algorithmId, frequency) => {
+    return `scanner_${algorithmId}_${frequency}`;
+  };
+
+  const getStepFromUpdateType = (updateType) => {
+    const stepMap = {
+      'volume_check': 'Volume Check',
+      'trend_analysis': 'Trend Analysis',
+      'trading_pairs_check': 'Trading Pairs Check',
+      'reward_risk_check': 'Reward:Risk Check',
+      'scanning_started': 'Scanning',
+      'instrument_accepted': 'Acceptance',
+      'instrument_rejected': 'Rejection'
     };
-  }
+    return stepMap[updateType] || 'Unknown';
+  };
 
-  componentDidMount() {
-    // Simulate live updates every 5 seconds
-    this.liveUpdateInterval = setInterval(() => {
-      this.setState({
-        liveData: this.generateMockLiveData(),
-        lastUpdate: new Date(),
-      });
-    }, 5000);
-  }
-
-  componentWillUnmount() {
-    if (this.liveUpdateInterval) {
-      clearInterval(this.liveUpdateInterval);
+  const getResultFromUpdateType = (updateType) => {
+    if (updateType === 'instrument_accepted' || updateType === 'scanning_started') {
+      return 'Passed';
+    } else if (updateType === 'instrument_rejected') {
+      return 'Failed';
     }
-  }
+    return 'Processed';
+  };
 
-  generateMockLiveData = () => {
-    // Generate realistic mock data for live trading session
-    const baseProfit = Math.random() * 2000 - 1000; // -1000 to +1000
-    return {
-      currentProfit: baseProfit,
-      totalTrades: Math.floor(Math.random() * 50) + 10,
-      activeTrades: Math.floor(Math.random() * 5) + 1,
-      successRate: Math.random() * 40 + 50, // 50-90%
-      recentTrades: this.generateRecentTrades(),
-      marketActivity: {
-        instrumentsScanned: Math.floor(Math.random() * 100) + 50,
-        signalsGenerated: Math.floor(Math.random() * 20) + 5,
-        ordersFilled: Math.floor(Math.random() * 15) + 2,
+  const handleScannerUpdate = useCallback((data) => {
+    // Add scanner log entry
+    const logEntry = {
+      id: Date.now() + Math.random(),
+      timestamp: new Date(data.timestamp || new Date()),
+      instrument: data.symbol,
+      step: getStepFromUpdateType(data.update_type),
+      result: getResultFromUpdateType(data.update_type),
+      message: data.message
+    };
+
+    dispatch({ type: 'ADD_SCANNER_LOG', payload: logEntry });
+    dispatch({ type: 'SET_LAST_UPDATE', payload: new Date() });
+
+    // Update scanner stats based on update type
+    if (data.update_type === 'instrument_accepted') {
+      dispatch({ 
+        type: 'UPDATE_SCANNER_STATS', 
+        payload: { eligible: (prev) => prev + 1 } 
+      });
+    } else if (data.update_type === 'instrument_rejected') {
+      dispatch({ 
+        type: 'UPDATE_SCANNER_STATS', 
+        payload: { notEligible: (prev) => prev + 1 } 
+      });
+    }
+  }, [dispatch]);
+
+  const handleTradeUpdate = useCallback((data) => {
+    // Handle real-time trade updates
+    dispatch({ type: 'UPDATE_TRADE', payload: data });
+    dispatch({ type: 'SET_LAST_UPDATE', payload: new Date() });
+  }, [dispatch]);
+
+  /**
+   * Sets up message handling for our professional WebSocket service
+   * Integrates with the existing singleton service for clean message routing
+   */
+  const setupMessageHandler = useCallback(() => {
+    if (messageHandlerRef.current) return; // Already set up
+
+    messageHandlerRef.current = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+
+        if (data.type === 'scanner_update') {
+          handleScannerUpdate(data);
+        } else if (data.type === 'trade_update') {
+          handleTradeUpdate(data);
+        } else if (data.type === 'connection_established') {
+          dispatch({ type: 'SET_WS_CONNECTION', payload: { connected: true } });
+        } else if (data.type === 'subscription_success') {
+          dispatch({ type: 'SET_WS_CONNECTION', payload: { connected: true, groupName: data.group_name } });
+        } else if (data.type === 'error') {
+          console.error('WebSocket subscription error:', data.message);
+        }
+      } catch (error) {
+        console.error('Error parsing WebSocket message:', error);
       }
     };
-  };
 
-  generateRecentTrades = () => {
-    const instruments = ['AAPL', 'GOOGL', 'MSFT', 'TSLA', 'AMZN', 'NVDA', 'META'];
-    const trades = [];
-    
-    for (let i = 0; i < 8; i++) {
-      const isProfit = Math.random() > 0.4;
-      const profit = isProfit 
-        ? Math.random() * 200 + 10 
-        : -(Math.random() * 150 + 5);
-      
-      trades.push({
-        id: i + 1,
-        instrument: instruments[Math.floor(Math.random() * instruments.length)],
-        type: Math.random() > 0.5 ? 'LONG' : 'SHORT',
-        quantity: Math.floor(Math.random() * 100) + 10,
-        entry: (Math.random() * 500 + 50).toFixed(2),
-        exit: profit > 0 ? 'CLOSED' : 'ACTIVE',
-        profit: profit,
-        time: new Date(Date.now() - Math.random() * 3600000).toLocaleTimeString(), // Random time in last hour
-      });
+    // Add our message handler to the professional WebSocket service
+    if (websocketService.socket) {
+      websocketService.socket.addEventListener('message', messageHandlerRef.current);
     }
-    
-    return trades.sort((a, b) => b.id - a.id);
-  };
+  }, [handleScannerUpdate, handleTradeUpdate, dispatch]);
 
-  formatCurrency = (amount) => {
+  /**
+   * Establishes WebSocket connection and subscribes to relevant groups
+   * Uses professional authentication and group management
+   */
+  const connect = useCallback(() => {
+    if (!sessionData) return;
+    
+    // Connect using our professional service (includes Sec-WebSocket-Protocol authentication)
+    websocketService.connect();
+
+    // Set up message handling
+    setupMessageHandler();
+
+    // Wait for connection and then subscribe to scanner updates
+    const checkConnectionAndSubscribe = () => {
+      if (websocketService.getConnectionStatus() && !isSubscribedRef.current) {
+        // Subscribe to scanner group for this algorithm and frequency
+        const algorithmId = sessionData.scanning_algorithm_id;
+        const frequency = sessionData.trading_frequency;
+        const groupName = getGroupName(algorithmId, frequency);
+
+        const subscribeMessage = {
+          action: 'subscribe_scanner',
+          algorithm_id: algorithmId,
+          frequency: frequency
+        };
+
+        websocketService.send(subscribeMessage);
+        isSubscribedRef.current = true;
+        
+        // Store group name for cleanup
+        sessionStorage.setItem('ats_ws_group', groupName);
+      } else if (!websocketService.getConnectionStatus()) {
+        // Check again in 100ms if not connected yet
+        setTimeout(checkConnectionAndSubscribe, 100);
+      }
+    };
+
+    // Start checking for connection
+    setTimeout(checkConnectionAndSubscribe, 100);
+  }, [sessionData, setupMessageHandler]);
+
+  /**
+   * Cleans up WebSocket connections and unsubscribes from groups
+   * Ensures proper resource cleanup when component unmounts
+   */
+  const disconnect = useCallback(() => {
+    // Remove message handler
+    if (messageHandlerRef.current && websocketService.socket) {
+      websocketService.socket.removeEventListener('message', messageHandlerRef.current);
+      messageHandlerRef.current = null;
+    }
+
+    // Unsubscribe from scanner group if subscribed
+    if (websocketService.getConnectionStatus() && sessionData && isSubscribedRef.current) {
+      const unsubscribeMessage = {
+        action: 'unsubscribe_scanner',
+        algorithm_id: sessionData.scanning_algorithm_id,
+        frequency: sessionData.trading_frequency
+      };
+      websocketService.send(unsubscribeMessage);
+      isSubscribedRef.current = false;
+    }
+
+    // Clear session storage and update UI state
+    sessionStorage.removeItem('ats_ws_group');
+    dispatch({ type: 'SET_WS_CONNECTION', payload: { connected: false, groupName: null } });
+  }, [sessionData, dispatch]);
+
+  // Auto-connect when sessionData is available
+  useEffect(() => {
+    if (sessionData) {
+      connect();
+    }
+
+    return () => {
+      disconnect();
+    };
+  }, [sessionData, connect, disconnect]);
+
+  // Monitor connection status for UI updates
+  useEffect(() => {
+    const checkConnection = () => {
+      const isConnected = websocketService.getConnectionStatus();
+      dispatch({ type: 'SET_WS_CONNECTION', payload: { connected: isConnected } });
+    };
+
+    const interval = setInterval(checkConnection, 1000);
+    return () => clearInterval(interval);
+  }, [dispatch]);
+
+  return {
+    connect,
+    disconnect,
+    isConnected: websocketService.getConnectionStatus()
+  };
+};
+
+// API functions
+const apiServiceHelpers = {
+  getTradeSessionDetails: async (sessionId) => {
+    try {
+      const response = await apiService.get(`${ENDPOINTS.TRADE_SESSIONS.GET_DETAILS}?trade_session_id=${sessionId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching trade session details:', error);
+      throw error;
+    }
+  },
+
+  getTrades: async (sessionId) => {
+    // This would be a separate endpoint to get trades for a session
+    // For now, we'll return empty array as trades are embedded in session details
+    try {
+      // This is a placeholder - in real implementation you might have a separate trades endpoint
+      // const response = await apiService.get(`${ENDPOINTS.TRADES.GET_ALL}?trade_session_id=${sessionId}`);
+      // return response.data;
+      return [];
+    } catch (error) {
+      console.error('Error fetching trades:', error);
+      return [];
+    }
+  },
+};
+
+// Trade Statistics Component
+const TradeStatistics = ({ stats, loading }) => {
+  const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
     }).format(amount);
   };
 
-  render() {
-    const { sessionId, navigate } = this.props;
-    const { liveData, lastUpdate } = this.state;
-
-    const handleBack = () => {
-      navigate('/trade-management');
-    };
-
-    const handleRefresh = () => {
-      this.setState({
-        liveData: this.generateMockLiveData(),
-        lastUpdate: new Date(),
-      });
-    };
-
+  if (loading) {
     return (
-      <LiveContainer>
-        {/* Header */}
-        <HeaderBox>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <IconButton onClick={handleBack} color="primary">
-              <BackIcon />
-            </IconButton>
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 0.5 }}>
-                <Typography variant="h4" component="h1" fontWeight="600">
-                  Live Trade Session #{sessionId}
-                </Typography>
-                <LiveBadge label="LIVE" size="small" />
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Last updated: {lastUpdate.toLocaleTimeString()}
-              </Typography>
-            </Box>
-          </Box>
-          <IconButton onClick={handleRefresh} color="primary">
-            <RefreshIcon />
-          </IconButton>
-        </HeaderBox>
-
-        {/* Live Statistics */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} md={3}>
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {[...Array(5)].map((_, index) => (
+          <Grid item xs={12} md={2.4} key={index}>
             <StatsCard>
               <CardContent sx={{ textAlign: 'center' }}>
-                <AssessmentIcon sx={{ fontSize: 40, color: liveData.currentProfit >= 0 ? 'success.main' : 'error.main', mb: 1 }} />
-                <Typography variant="h4" sx={{ 
-                  fontWeight: 700, 
-                  color: liveData.currentProfit >= 0 ? 'success.main' : 'error.main',
-                  mb: 1
-                }}>
-                  {this.formatCurrency(liveData.currentProfit)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Current P&L
-                </Typography>
+                <CircularProgress size={24} />
               </CardContent>
             </StatsCard>
           </Grid>
+        ))}
+      </Grid>
+    );
+  }
 
-          <Grid item xs={12} md={3}>
-            <StatsCard>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <ShowChartIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main', mb: 1 }}>
-                  {liveData.totalTrades}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Total Trades
-                </Typography>
-              </CardContent>
-            </StatsCard>
-          </Grid>
-
-          <Grid item xs={12} md={3}>
-            <StatsCard>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <AccessTimeIcon sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: 'warning.main', mb: 1 }}>
-                  {liveData.activeTrades}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Active Trades
-                </Typography>
-              </CardContent>
-            </StatsCard>
-          </Grid>
-
-          <Grid item xs={12} md={3}>
-            <StatsCard>
-              <CardContent sx={{ textAlign: 'center' }}>
-                <AnalyticsIcon sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
-                <Typography variant="h4" sx={{ fontWeight: 700, color: 'info.main', mb: 1 }}>
-                  {liveData.successRate.toFixed(1)}%
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Success Rate
-                </Typography>
-              </CardContent>
-            </StatsCard>
-          </Grid>
-        </Grid>
-
-        {/* Market Activity */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <AnalyticsIcon />
-              Market Activity
+  return (
+    <Grid container spacing={3} sx={{ mb: 3 }}>
+      <Grid item xs={12} md={2.4}>
+        <StatsCard>
+          <CardContent sx={{ textAlign: 'center' }}>
+            <ShowChartIcon sx={{ fontSize: 40, color: 'primary.main', mb: 1 }} />
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'primary.main', mb: 1 }}>
+              {stats.totalTrades}
             </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={4}>
-                <Box sx={{ textAlign: 'center', p: 2 }}>
-                  <Typography variant="h5" color="primary.main" fontWeight="600">
-                    {liveData.marketActivity.instrumentsScanned}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Instruments Scanned
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={4}>
-                <Box sx={{ textAlign: 'center', p: 2 }}>
-                  <Typography variant="h5" color="success.main" fontWeight="600">
-                    {liveData.marketActivity.signalsGenerated}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Signals Generated
-                  </Typography>
-                </Box>
-              </Grid>
-              <Grid item xs={4}>
-                <Box sx={{ textAlign: 'center', p: 2 }}>
-                  <Typography variant="h5" color="warning.main" fontWeight="600">
-                    {liveData.marketActivity.ordersFilled}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Orders Filled
-                  </Typography>
-                </Box>
-              </Grid>
-            </Grid>
+            <Typography variant="body2" color="text.secondary">
+              Total Trades
+            </Typography>
           </CardContent>
-        </Card>
+        </StatsCard>
+      </Grid>
 
-        {/* Recent Trades Table */}
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ShowChartIcon />
-              Recent Trades
+      <Grid item xs={12} md={2.4}>
+        <StatsCard>
+          <CardContent sx={{ textAlign: 'center' }}>
+            <AccessTimeIcon sx={{ fontSize: 40, color: 'warning.main', mb: 1 }} />
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'warning.main', mb: 1 }}>
+              {stats.activeTrades}
             </Typography>
-            <TableContainer component={Paper} variant="outlined">
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Time</TableCell>
-                    <TableCell>Instrument</TableCell>
-                    <TableCell>Type</TableCell>
-                    <TableCell align="right">Quantity</TableCell>
-                    <TableCell align="right">Entry Price</TableCell>
-                    <TableCell>Status</TableCell>
-                    <TableCell align="right">P&L</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {liveData.recentTrades.map((trade) => (
-                    <TableRow key={trade.id}>
-                      <TableCell>{trade.time}</TableCell>
-                      <TableCell>
-                        <Typography fontWeight="600">{trade.instrument}</Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={trade.type}
-                          size="small"
-                          color={trade.type === 'LONG' ? 'success' : 'error'}
-                          variant="outlined"
-                        />
-                      </TableCell>
-                      <TableCell align="right">{trade.quantity}</TableCell>
-                      <TableCell align="right">${trade.entry}</TableCell>
-                      <TableCell>
-                        <Chip 
-                          label={trade.exit}
-                          size="small"
-                          color={trade.exit === 'ACTIVE' ? 'warning' : 'default'}
-                          variant={trade.exit === 'ACTIVE' ? 'filled' : 'outlined'}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
+            <Typography variant="body2" color="text.secondary">
+              Active Trades
+            </Typography>
+          </CardContent>
+        </StatsCard>
+      </Grid>
+
+      <Grid item xs={12} md={2.4}>
+        <StatsCard>
+          <CardContent sx={{ textAlign: 'center' }}>
+            <CheckCircleIcon sx={{ fontSize: 40, color: 'success.main', mb: 1 }} />
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'success.main', mb: 1 }}>
+              {stats.closedTrades}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Closed Trades
+            </Typography>
+          </CardContent>
+        </StatsCard>
+      </Grid>
+
+      <Grid item xs={12} md={2.4}>
+        <StatsCard>
+          <CardContent sx={{ textAlign: 'center' }}>
+            <AnalyticsIcon sx={{ fontSize: 40, color: 'info.main', mb: 1 }} />
+            <Typography variant="h4" sx={{ fontWeight: 700, color: 'info.main', mb: 1 }}>
+              {stats.successRate.toFixed(1)}%
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Success Rate
+            </Typography>
+          </CardContent>
+        </StatsCard>
+      </Grid>
+
+      <Grid item xs={12} md={2.4}>
+        <StatsCard>
+          <CardContent sx={{ textAlign: 'center' }}>
+            <AssessmentIcon sx={{ 
+              fontSize: 40, 
+              color: stats.totalProfitLoss >= 0 ? 'success.main' : 'error.main', 
+              mb: 1 
+            }} />
+            <Typography variant="h4" sx={{ 
+              fontWeight: 700, 
+              color: stats.totalProfitLoss >= 0 ? 'success.main' : 'error.main',
+              mb: 1
+            }}>
+              {formatCurrency(stats.totalProfitLoss)}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Total P&L
+            </Typography>
+          </CardContent>
+        </StatsCard>
+      </Grid>
+    </Grid>
+  );
+};
+
+// Trade Table Component
+const TradeTable = ({ trades, filters, onFilterChange, loading }) => {
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(amount);
+  };
+
+  const filteredTrades = trades.filter(trade => {
+    if (!filters.showActive && trade.is_active) return false;
+    if (!filters.showClosed && !trade.is_active) return false;
+    return true;
+  });
+
+  if (loading) {
+    return (
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress />
+          </Box>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card sx={{ mb: 3 }}>
+      <CardContent>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ShowChartIcon />
+            Trade List
+            <Badge badgeContent={filteredTrades.length} color="primary" />
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={filters.showActive}
+                  onChange={(e) => onFilterChange({ showActive: e.target.checked })}
+                />
+              }
+              label="Active"
+            />
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={filters.showClosed}
+                  onChange={(e) => onFilterChange({ showClosed: e.target.checked })}
+                />
+              }
+              label="Closed"
+            />
+          </Box>
+        </Box>
+        
+        <TableContainer component={Paper} variant="outlined">
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Instrument</TableCell>
+                <TableCell>Type</TableCell>
+                <TableCell align="right">Quantity</TableCell>
+                <TableCell align="right">Entry Price</TableCell>
+                <TableCell align="right">Exit Price</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell align="right">P&L</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredTrades.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} align="center">
+                    <Typography variant="body2" color="text.secondary">
+                      No trades found
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredTrades.map((trade) => (
+                  <TableRow key={trade.id}>
+                    <TableCell>
+                      <Typography fontWeight="600">
+                        {trade.instrument?.trading_symbol || 'Unknown'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={trade.view?.toUpperCase() || 'UNKNOWN'}
+                        size="small"
+                        color={trade.view === 'long' ? 'success' : 'error'}
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell align="right">-</TableCell>
+                    <TableCell align="right">-</TableCell>
+                    <TableCell align="right">-</TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={trade.is_active ? 'ACTIVE' : 'CLOSED'}
+                        size="small"
+                        color={trade.is_active ? 'warning' : 'default'}
+                        variant={trade.is_active ? 'filled' : 'outlined'}
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      {!trade.is_active && trade.net_profit !== null ? (
                         <Box sx={{ 
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'flex-end',
                           gap: 0.5
                         }}>
-                          {trade.profit >= 0 ? <TrendingUpIcon color="success" /> : <TrendingDownIcon color="error" />}
+                          {trade.net_profit >= 0 ? 
+                            <TrendingUpIcon color="success" fontSize="small" /> : 
+                            <TrendingDownIcon color="error" fontSize="small" />
+                          }
                           <Typography 
                             fontWeight="600"
-                            color={trade.profit >= 0 ? 'success.main' : 'error.main'}
+                            color={trade.net_profit >= 0 ? 'success.main' : 'error.main'}
                           >
-                            {this.formatCurrency(trade.profit)}
+                            {formatCurrency(parseFloat(trade.net_profit))}
                           </Typography>
                         </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      </LiveContainer>
-    );
-  }
-}
+                      ) : (
+                        <Typography color="text.secondary">-</Typography>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </CardContent>
+    </Card>
+  );
+};
 
-// Wrapper component to handle React Router hooks
+// Scanner Section Component
+const ScannerSection = ({ scannerStats, scannerLogs, loading, wsConnected }) => {
+  return (
+    <Card>
+      <CardContent>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <SearchIcon />
+            Live Scanner
+          </Typography>
+          <Chip 
+            label={wsConnected ? 'CONNECTED' : 'DISCONNECTED'}
+            size="small"
+            color={wsConnected ? 'success' : 'error'}
+            variant="filled"
+          />
+        </Box>
+        
+        {/* Scanner Stats */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          <Grid item xs={4}>
+            <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="h5" color="primary.main" fontWeight="600">
+                {loading ? <CircularProgress size={24} /> : scannerStats.totalScanned}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Total Scanned
+              </Typography>
+            </Box>
+          </Grid>
+          <Grid item xs={4}>
+            <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="h5" color="success.main" fontWeight="600">
+                {loading ? <CircularProgress size={24} /> : scannerStats.eligible}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Eligible
+              </Typography>
+            </Box>
+          </Grid>
+          <Grid item xs={4}>
+            <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="h5" color="error.main" fontWeight="600">
+                {loading ? <CircularProgress size={24} /> : scannerStats.notEligible}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Not Eligible
+              </Typography>
+            </Box>
+          </Grid>
+        </Grid>
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Scanner Logs */}
+        <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <AnalyticsIcon />
+          Live Scanner Logs
+          <Badge badgeContent={scannerLogs.length} color="primary" />
+        </Typography>
+        
+        <ScannerLogContainer>
+          {scannerLogs.length === 0 ? (
+            <Alert severity="info">
+              {wsConnected 
+                ? "Connected to scanner. Waiting for scanner activity..." 
+                : "Connecting to scanner for real-time updates..."
+              }
+            </Alert>
+          ) : (
+            <List dense>
+              {scannerLogs.map((log) => (
+                <ListItem key={log.id} sx={{ py: 0.5 }}>
+                  <ListItemIcon>
+                    {log.result === 'Passed' ? (
+                      <CheckCircleIcon color="success" fontSize="small" />
+                    ) : (
+                      <CancelIcon color="error" fontSize="small" />
+                    )}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={
+                      <Typography variant="body2">
+                        <strong>{log.instrument}</strong> - {log.step}: {log.result}
+                        {log.message && (
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            {log.message}
+                          </Typography>
+                        )}
+                      </Typography>
+                    }
+                    secondary={new Date(log.timestamp).toLocaleTimeString()}
+                  />
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </ScannerLogContainer>
+      </CardContent>
+    </Card>
+  );
+};
+
+// Main Component
 const LiveTradeSession = () => {
   const navigate = useNavigate();
   const { sessionId } = useParams();
-  
-  return <LiveTradeSessionInner sessionId={sessionId} navigate={navigate} />;
+  const [state, dispatch] = useReducer(stateReducer, initialState);
+
+  // Initialize WebSocket connection
+  const { connect, disconnect } = useWebSocket(sessionId, state.sessionData, dispatch);
+
+  // Load initial data
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        dispatch({ type: 'SET_LAST_UPDATE', payload: new Date() });
+        
+        // Fetch session details
+        const sessionDetails = await apiServiceHelpers.getTradeSessionDetails(sessionId);
+        dispatch({ type: 'SET_SESSION_DATA', payload: sessionDetails });
+
+        // Fetch trades
+        const trades = await apiServiceHelpers.getTrades(sessionId);
+        dispatch({ type: 'SET_TRADES', payload: trades });
+
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+        // Handle error appropriately - maybe show error message
+      }
+    };
+
+    if (sessionId) {
+      loadInitialData();
+    }
+  }, [sessionId]);
+
+  const handleBack = () => {
+    navigate('/trade-management');
+  };
+
+  const handleRefresh = async () => {
+    dispatch({ type: 'SET_LAST_UPDATE', payload: new Date() });
+    
+    try {
+      // Refresh session details
+      const sessionDetails = await apiServiceHelpers.getTradeSessionDetails(sessionId);
+      dispatch({ type: 'SET_SESSION_DATA', payload: sessionDetails });
+
+      // Refresh trades
+      const trades = await apiServiceHelpers.getTrades(sessionId);
+      dispatch({ type: 'SET_TRADES', payload: trades });
+
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    }
+  };
+
+  const handleFilterChange = useCallback((newFilters) => {
+    dispatch({ type: 'UPDATE_FILTERS', payload: newFilters });
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      disconnect();
+    };
+  }, [disconnect]);
+
+  return (
+    <LiveContainer>
+      {/* Breadcrumbs */}
+      <Box sx={{ mb: 2 }}>
+        <Breadcrumbs>
+          <Link 
+            underline="hover" 
+            color="inherit" 
+            href="/"
+            sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}
+          >
+            <HomeIcon fontSize="small" />
+            Home
+          </Link>
+          <Link 
+            underline="hover" 
+            color="inherit" 
+            onClick={() => navigate('/trade-management')}
+            sx={{ cursor: 'pointer' }}
+          >
+            Trade Management
+          </Link>
+          <Typography color="text.primary">
+            Live Trade Session #{sessionId}
+          </Typography>
+        </Breadcrumbs>
+      </Box>
+
+      {/* Header */}
+      <HeaderBox>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <IconButton onClick={handleBack} color="primary">
+            <BackIcon />
+          </IconButton>
+          <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 0.5 }}>
+              <Typography variant="h4" component="h1" fontWeight="600">
+                Live Trade Session #{sessionId}
+              </Typography>
+              <LiveBadge label="LIVE" size="small" />
+              {state.sessionData && (
+                <Chip 
+                  label={`${state.sessionData.trading_frequency} | Algo ${state.sessionData.scanning_algorithm_id}`}
+                  size="small"
+                  variant="outlined"
+                />
+              )}
+            </Box>
+            <Typography variant="body2" color="text.secondary">
+              Last updated: {state.lastUpdate.toLocaleTimeString()}
+              {state.wsConnected && (
+                <Chip 
+                  label="Live Updates"
+                  size="small"
+                  color="success"
+                  variant="outlined"
+                  sx={{ ml: 1 }}
+                />
+              )}
+            </Typography>
+          </Box>
+        </Box>
+        <IconButton onClick={handleRefresh} color="primary">
+          <RefreshIcon />
+        </IconButton>
+      </HeaderBox>
+
+      {/* Live Statistics */}
+      <TradeStatistics 
+        stats={state.sessionStats} 
+        loading={state.loading.sessionStats} 
+      />
+
+      {/* Trade List Table */}
+      <TradeTable 
+        trades={state.trades}
+        filters={state.filters}
+        onFilterChange={handleFilterChange}
+        loading={state.loading.trades}
+      />
+
+      {/* Scanner Section */}
+      <ScannerSection 
+        scannerStats={state.scannerStats}
+        scannerLogs={state.scannerLogs}
+        loading={state.loading.scannerStats}
+        wsConnected={state.wsConnected}
+      />
+    </LiveContainer>
+  );
 };
 
 export default LiveTradeSession; 
