@@ -6,12 +6,16 @@ const environments = {
   development: {
     // Use relative paths in development - React proxy will handle backend routing
     apiBaseUrl: '',
+    // WebSocket URLs need absolute URLs even in development (proxy doesn't work for WS)
+    wsBaseUrl: 'ws://localhost:18000',
   },
   testing: {
     apiBaseUrl: process.env.REACT_APP_API_URL || 'http://test-api.algorithmic-trade.example',
+    wsBaseUrl: process.env.REACT_APP_WS_URL || 'ws://test-api.algorithmic-trade.example',
   },
   production: {
     apiBaseUrl: process.env.REACT_APP_API_URL || 'https://api.algorithmic-trade.example',
+    wsBaseUrl: process.env.REACT_APP_WS_URL || 'wss://api.algorithmic-trade.example',
   }
 };
 
@@ -29,6 +33,14 @@ export const getApiUrl = (endpoint) => {
   }
   
   return `${config.apiBaseUrl}${normalizedEndpoint}`;
+};
+
+// Export a function to get the complete WebSocket URL
+export const getWsUrl = (endpoint) => {
+  // Make sure endpoint starts with '/'
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  
+  return `${config.wsBaseUrl}${normalizedEndpoint}`;
 };
 
 // Export the base configuration

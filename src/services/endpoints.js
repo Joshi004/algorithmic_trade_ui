@@ -64,6 +64,11 @@ const ENDPOINTS = {
     GET_UDTS_ELIGIBILITY: 'tmu/get_udts_eligibility',
     GET_UDTS_RECORD: 'tmu/get_udts_redcord',
   },
+  
+  // WebSocket endpoints
+  WEBSOCKET: {
+    ATS: '/ws/ats/',
+  },
 };
 
 export default ENDPOINTS; 

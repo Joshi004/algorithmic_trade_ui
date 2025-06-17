@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import ENDPOINTS from '../services/endpoints';
 import apiService from '../services/apiService';
 import tokenManager from '../services/tokenManager';
+import websocketService from '../services/websocketService';
 
 const AuthContext = createContext();
 
@@ -27,6 +28,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         sessionStorage.removeItem('user');
         tokenManager.stopTokenManagement();
+        websocketService.disconnect();
       },
       // onTokenRefreshed callback  
       (tokenInfo) => {
@@ -93,6 +95,13 @@ export const AuthProvider = ({ children }) => {
       } else {
         console.warn('AuthContext: No token_info in login response');
       }
+
+      // Establish WebSocket connection after successful login
+      // Wait briefly to ensure cookies are set before connecting
+      setTimeout(() => {
+        console.log('AuthContext: Establishing WebSocket connection after login');
+        websocketService.connect();
+      }, 100);
       
       return response;
     } catch (error) {
@@ -124,6 +133,8 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       sessionStorage.removeItem('user');
       tokenManager.stopTokenManagement();
+      // Disconnect WebSocket on logout
+      websocketService.disconnect();
       // Don't redirect here as apiService.logout() handles it
     }
   };
@@ -132,6 +143,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     sessionStorage.removeItem('user');
     tokenManager.stopTokenManagement();
+    websocketService.disconnect();
   };
 
   // Helper method to get token status
