@@ -1,5 +1,4 @@
-import "./TradeSessionGrid.scss";
-
+import React, { Component } from 'react';
 import {
   Box,
   Button,
@@ -7,44 +6,29 @@ import {
   DialogContent,
   DialogTitle,
   Typography
-} from "@mui/material";
-import React, { Component } from "react";
+} from '@mui/material';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import TradeSessionForm from './TradeSessionForm';
+import ENDPOINTS from '../../../services/endpoints';
+import apiService from '../../../services/apiService';
 
-import ENDPOINTS from "../../../../services/endpoints";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import TradeSessionForm from "./TradeSessionForm/TradeSessionForm";
-import TradeSessionsList from "./TradeSessionsList/TradeSessionsList";
-import apiService from "../../../../services/apiService";
-import { styled } from "@mui/material/styles";
-
-// Styled components
-const HeaderBox = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: theme.spacing(3),
-  padding: theme.spacing(2),
-  backgroundColor: theme.palette.background.paper,
-  borderRadius: theme.spacing(1),
-  boxShadow: theme.shadows[1],
-}));
-
-class TradeSessionGrid extends Component {
+class CreateTradeSession extends Component {
   constructor(props) {
     super(props);
     this.state = { 
-      modalOpen: false,
-      refreshTrigger: 0 // Used to trigger refresh of trade sessions list
+      modalOpen: false
     };
   }
 
   handleFormSubmit = async (formData) => {
     try {
       await this.initiateTradeSession(formData);
-      this.setState({ 
-        modalOpen: false,
-        refreshTrigger: this.state.refreshTrigger + 1 // Trigger refresh of trade sessions list
-      });
+      this.setState({ modalOpen: false });
+      
+      // Notify parent component about successful creation
+      if (this.props.onSessionCreated) {
+        this.props.onSessionCreated();
+      }
     } catch (error) {
       console.error("Failed to initiate trade session:", error);
     }
@@ -70,19 +54,13 @@ class TradeSessionGrid extends Component {
   };
 
   render() {
-    const { modalOpen, refreshTrigger } = this.state;
+    const { modalOpen } = this.state;
+    const { sessionParameters, parametersLoading } = this.props;
 
     return (
-      <Box className="trade-session-grid-component" p={3}>
-        <HeaderBox>
-          <Box>
-            <Typography variant="h4" component="h1" fontWeight="600" gutterBottom>
-              Trade Sessions
-            </Typography>
-            <Typography variant="body1" color="text.secondary">
-              Create and manage your algorithmic trading sessions
-            </Typography>
-          </Box>
+      <Box>
+        {/* New Session Button */}
+        <Box display="flex" justifyContent="flex-end" mb={3}>
           <Button
             variant="contained"
             size="large"
@@ -98,13 +76,7 @@ class TradeSessionGrid extends Component {
           >
             New Session
           </Button>
-        </HeaderBox>
-
-        {/* Trade Sessions List */}
-        <TradeSessionsList 
-          sessionParameters={this.props.sessionParameters}
-          refreshTrigger={refreshTrigger}
-        />
+        </Box>
 
         {/* New Session Dialog */}
         <Dialog 
@@ -124,8 +96,8 @@ class TradeSessionGrid extends Component {
           <DialogContent sx={{ pt: 1 }}>
             <TradeSessionForm 
               onSubmit={this.handleFormSubmit} 
-              sessionParameters={this.props.sessionParameters}
-              parametersLoading={this.props.parametersLoading}
+              sessionParameters={sessionParameters}
+              parametersLoading={parametersLoading}
             />
           </DialogContent>
         </Dialog>
@@ -134,4 +106,4 @@ class TradeSessionGrid extends Component {
   }
 }
 
-export default TradeSessionGrid;
+export default CreateTradeSession; 

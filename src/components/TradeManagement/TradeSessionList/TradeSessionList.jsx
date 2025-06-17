@@ -8,17 +8,15 @@ import {
 } from '@mui/material';
 import React, { Component } from 'react';
 
-import ENDPOINTS from '../../../../../services/endpoints';
-import TradeSessionAccordion from '../TradeSessionAccordion/TradeSessionAccordion';
-import apiService from '../../../../../services/apiService';
+import ENDPOINTS from '../../../services/endpoints';
+import TradeSession from './TradeSession/TradeSession';
+import apiService from '../../../services/apiService';
 import { styled } from '@mui/material/styles';
 
 const ListContainer = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(3),
   width: '100%',
 }));
-
-
 
 const EmptyStateContainer = styled(Box)(({ theme }) => ({
   textAlign: 'center',
@@ -28,7 +26,7 @@ const EmptyStateContainer = styled(Box)(({ theme }) => ({
   border: `1px dashed ${theme.palette.grey[300]}`,
 }));
 
-class TradeSessionsList extends Component {
+class TradeSessionList extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -80,8 +78,6 @@ class TradeSessionsList extends Component {
       });
     }
   };
-
-
 
   handleSessionAction = async (action, sessionId) => {
     try {
@@ -198,7 +194,7 @@ class TradeSessionsList extends Component {
           You haven't created any trading sessions yet.
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Click "New Session" above to create your first algorithmic trading session.
+          Click "New Session" to create your first trading session.
         </Typography>
       </EmptyStateContainer>
     );
@@ -208,67 +204,65 @@ class TradeSessionsList extends Component {
     const { tradeSessions, loading, error, refreshing } = this.state;
     const { sessionParameters } = this.props;
 
-    if (loading) {
-      return (
-        <ListContainer>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Your Trade Sessions
-          </Typography>
-          {this.renderSkeletonLoading()}
-        </ListContainer>
-      );
-    }
-
     return (
       <ListContainer>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6">
-            Your Trade Sessions ({tradeSessions.length})
-          </Typography>
-          {refreshing && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <CircularProgress size={16} />
-              <Typography variant="caption" color="text.secondary">
-                Updating...
-              </Typography>
-            </Box>
-          )}
-        </Box>
-
+        {/* Error Message */}
         {error && (
-          <Alert severity="info" sx={{ mb: 2 }}>
+          <Alert severity="warning" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
 
-        {!sessionParameters && (
-          <Alert severity="warning" sx={{ mb: 2 }}>
-            Algorithm names are loading... Showing IDs temporarily.
-          </Alert>
-        )}
-
-        {tradeSessions.length === 0 ? (
-          <Fade in timeout={300}>
-            <div>{this.renderEmptyState()}</div>
-          </Fade>
+        {/* Loading State */}
+        {loading ? (
+          this.renderSkeletonLoading()
         ) : (
-          <Fade in timeout={300}>
-            <Box>
-              {tradeSessions.map((session) => (
-                <TradeSessionAccordion
-                  key={session.id}
-                  session={session}
-                  sessionParameters={sessionParameters}
-                  onAction={this.handleSessionAction}
-                  onSessionUpdate={this.handleSessionUpdate}
-                />
-              ))}
-            </Box>
-          </Fade>
+          <>
+            {/* Empty State */}
+            {tradeSessions.length === 0 ? (
+              this.renderEmptyState()
+            ) : (
+              <>
+                {/* Sessions List */}
+                <Fade in={!loading}>
+                  <Box>
+                    {tradeSessions.map((session) => (
+                      <TradeSession
+                        key={session.id}
+                        session={session}
+                        sessionParameters={sessionParameters}
+                        onAction={this.handleSessionAction}
+                        onSessionUpdate={this.handleSessionUpdate}
+                        disabled={refreshing}
+                      />
+                    ))}
+                  </Box>
+                </Fade>
+
+                {/* Loading Overlay */}
+                {refreshing && (
+                  <Box 
+                    sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'center', 
+                      alignItems: 'center', 
+                      mt: 2,
+                      opacity: 0.7 
+                    }}
+                  >
+                    <CircularProgress size={24} />
+                    <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                      Updating sessions...
+                    </Typography>
+                  </Box>
+                )}
+              </>
+            )}
+          </>
         )}
       </ListContainer>
     );
   }
 }
 
-export default TradeSessionsList; 
+export default TradeSessionList; 

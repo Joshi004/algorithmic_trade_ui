@@ -14,6 +14,7 @@ import React from 'react';
 import StockManagement from './components/StockManagement/StockManagement';
 import { Toaster } from 'react-hot-toast';
 import TradeManagement from './components/TradeManagement/TradeManagement';
+import LiveTradeSession from './components/TradeManagement/TradeSessionList/TradeSession/LiveTradeSession/LiveTradeSession';
 
 function RouteWrapper() {
     const location = useLocation();
@@ -91,6 +92,16 @@ function RouteWrapper() {
                     <ProtectedRoute>
                         <Layout>
                             <TradeManagement {...defaultProps} />
+                        </Layout>
+                    </ProtectedRoute>
+                } 
+            />
+            <Route 
+                path="/trade-sessions/:sessionId/live" 
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <LiveTradeSession {...defaultProps} />
                         </Layout>
                     </ProtectedRoute>
                 } 

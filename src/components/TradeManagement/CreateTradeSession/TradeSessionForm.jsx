@@ -250,7 +250,7 @@ class TradeSessionForm extends Component {
     helperText = ""
   ) => {
     return (
-      <Box mb={2}>
+      <Box key={field}>
         <StyledFormControl required={required}>
           <InputLabel>{label}</InputLabel>
           <Select
@@ -260,27 +260,35 @@ class TradeSessionForm extends Component {
           >
             {options.map((option) => (
               <MenuItem key={option.id || option.value} value={option.id || option.value}>
-                {option.displayName || option.label}
+                <Box>
+                  <Typography variant="body2" fontWeight="600">
+                    {option.displayName || option.label}
+                  </Typography>
+                  {option.name !== option.displayName && (
+                    <Typography variant="caption" color="text.secondary">
+                      {option.name}
+                    </Typography>
+                  )}
+                </Box>
               </MenuItem>
             ))}
           </Select>
+          {helperText && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+              {helperText}
+            </Typography>
+          )}
         </StyledFormControl>
         
         {description && (
           <DescriptionBox elevation={0}>
-            <Box display="flex" alignItems="flex-start" gap={1}>
-              <InfoIcon color="primary" fontSize="small" sx={{ mt: 0.5 }} />
+            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+              <InfoIcon sx={{ fontSize: 20, color: 'primary.main', mt: 0.2 }} />
               <Typography variant="body2" color="text.secondary">
                 {description}
               </Typography>
             </Box>
           </DescriptionBox>
-        )}
-        
-        {helperText && (
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-            {helperText}
-          </Typography>
         )}
       </Box>
     );
@@ -288,137 +296,145 @@ class TradeSessionForm extends Component {
 
   render() {
     const { 
-      scanningOptions, 
-      initiationOptions, 
-      terminationOptions, 
+      loading, 
+      submitting, 
+      error,
+      scanningOptions,
+      initiationOptions,
+      terminationOptions,
       frequencyOptions,
       scanningDescription,
       initiationDescription,
       terminationDescription,
-      isDummy,
-      loading,
-      submitting,
-      error
+      isDummy
     } = this.state;
 
     if (loading) {
       return (
-        <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
-          <CircularProgress size={60} />
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}>
+          <CircularProgress />
         </Box>
       );
     }
 
     return (
-      <StyledCard>
-        <CardHeader
-          title={
-            <Box display="flex" alignItems="center" gap={1}>
-              <PlayArrowIcon color="primary" />
-              <Typography variant="h5" component="h2" fontWeight="600">
-                Initiate New Trade Session
+      <Box component="form" onSubmit={this.handleSubmit} sx={{ width: '100%' }}>
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+        )}
+
+        {/* Demo Mode Toggle */}
+        <Box sx={{ mb: 3, p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isDummy}
+                onChange={this.handleSwitchChange('isDummy')}
+                color="warning"
+              />
+            }
+            label={
+              <Box>
+                <Typography variant="body2" fontWeight="600">
+                  Demo Mode
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {isDummy 
+                    ? "Session will run with simulated trades (no real money)"
+                    : "Session will execute real trades with actual money"
+                  }
+                </Typography>
+              </Box>
+            }
+          />
+          {!isDummy && (
+            <Alert severity="warning" sx={{ mt: 2 }}>
+              <Typography variant="body2" fontWeight="600">
+                Real Trading Mode Enabled
               </Typography>
-            </Box>
-          }
-          subheader="Configure your algorithmic trading session parameters"
-        />
-        
-        <CardContent>
-          {error && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              {error}
+              <Typography variant="caption">
+                This session will execute real trades with actual money. Make sure you understand the risks.
+              </Typography>
             </Alert>
           )}
-          
-          <Box component="form" onSubmit={this.handleSubmit}>
-            {this.renderFormField(
-              "Scanning Algorithm",
-              "scanningAlgorithmId",
-              scanningOptions,
-              scanningDescription,
-              true,
-              "Algorithm used to scan and identify trading opportunities"
-            )}
-            
-            <Divider sx={{ my: 2 }} />
-            
-            {this.renderFormField(
-              "Initiation Algorithm",
-              "initiationAlgorithmId",
-              initiationOptions,
-              initiationDescription,
-              true,
-              "Algorithm used to initiate trades based on scanning results"
-            )}
-            
-            <Divider sx={{ my: 2 }} />
-            
-            {this.renderFormField(
-              "Termination Algorithm",
-              "terminationAlgorithmId",
-              terminationOptions,
-              terminationDescription,
-              true,
-              "Algorithm used to terminate trades and manage exits"
-            )}
-            
-            <Divider sx={{ my: 2 }} />
-            
-            {this.renderFormField(
-              "Trading Frequency",
-              "tradingFrequency",
-              frequencyOptions,
-              null,
-              true,
-              "Time interval for trading decisions and analysis"
-            )}
-            
-            <Box my={3}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={isDummy}
-                    onChange={this.handleSwitchChange('isDummy')}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <Typography variant="body1">
-                      Paper Trading Mode
-                    </Typography>
-                    <Chip 
-                      size="small" 
-                      label={isDummy ? "Demo" : "Live"} 
-                      color={isDummy ? "default" : "warning"}
-                      variant="outlined"
-                    />
-                  </Box>
-                }
-              />
-              <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1 }}>
-                {isDummy 
-                  ? "Simulate trades without real money for testing and learning"
-                  : "Execute real trades with actual capital - use with caution"
-                }
-              </Typography>
-            </Box>
-            
-            <SubmitButton
-              type="submit"
-              variant="contained"
-              size="large"
-              fullWidth
-              disabled={submitting}
-              startIcon={submitting ? <CircularProgress size={20} /> : <PlayArrowIcon />}
-            >
-              {submitting ? "Initiating Session..." : "Start Trading Session"}
-            </SubmitButton>
-          </Box>
-        </CardContent>
-      </StyledCard>
+        </Box>
+
+        <Divider sx={{ mb: 3 }} />
+
+        {/* Algorithm Selection */}
+        {this.renderFormField(
+          "Scanning Algorithm",
+          "scanningAlgorithmId",
+          scanningOptions,
+          scanningDescription,
+          true,
+          "Algorithm used to scan and identify trading opportunities"
+        )}
+
+        <Divider sx={{ my: 2 }} />
+
+        {this.renderFormField(
+          "Initiation Algorithm", 
+          "initiationAlgorithmId",
+          initiationOptions,
+          initiationDescription,
+          true,
+          "Algorithm used to determine when to enter trades"
+        )}
+
+        <Divider sx={{ my: 2 }} />
+
+        {this.renderFormField(
+          "Termination Algorithm",
+          "terminationAlgorithmId", 
+          terminationOptions,
+          terminationDescription,
+          true,
+          "Algorithm used to determine when to exit trades"
+        )}
+
+        <Divider sx={{ my: 2 }} />
+
+        {/* Trading Frequency */}
+        <StyledFormControl required>
+          <InputLabel>Trading Frequency</InputLabel>
+          <Select
+            value={this.state.tradingFrequency}
+            onChange={this.handleChange('tradingFrequency')}
+            label="Trading Frequency"
+          >
+            {frequencyOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                <Chip 
+                  label={option.label}
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                />
+              </MenuItem>
+            ))}
+          </Select>
+          <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+            How frequently the algorithms will evaluate and potentially execute trades
+          </Typography>
+        </StyledFormControl>
+
+        {/* Submit Button */}
+        <SubmitButton
+          type="submit"
+          variant="contained"
+          size="large"
+          fullWidth
+          disabled={submitting}
+          startIcon={submitting ? <CircularProgress size={20} /> : <PlayArrowIcon />}
+        >
+          {submitting ? "Creating Session..." : "Create Trade Session"}
+        </SubmitButton>
+      </Box>
     );
   }
 }
 
-export default TradeSessionForm;
+export default TradeSessionForm; 

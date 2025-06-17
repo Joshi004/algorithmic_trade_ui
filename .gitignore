@@ -131,3 +131,6 @@ dist
 
 # React build output
 build/
+# Package lock files
+package-lock.json
+
