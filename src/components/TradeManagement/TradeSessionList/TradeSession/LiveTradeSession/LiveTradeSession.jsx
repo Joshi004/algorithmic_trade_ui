@@ -1,51 +1,53 @@
-import React, { useEffect, useReducer, useCallback, useRef } from 'react';
 import {
+  AccessTime as AccessTimeIcon,
+  Analytics as AnalyticsIcon,
+  Assessment as AssessmentIcon,
+  ArrowBack as BackIcon,
+  Cancel as CancelIcon,
+  CheckCircle as CheckCircleIcon,
+  Home as HomeIcon,
+  Refresh as RefreshIcon,
+  Search as SearchIcon,
+  ShowChart as ShowChartIcon,
+  TrendingDown as TrendingDownIcon,
+  TrendingUp as TrendingUpIcon
+} from '@mui/icons-material';
+import {
+  Alert,
+  Badge,
   Box,
+  Breadcrumbs,
   Card,
   CardContent,
   Chip,
+  CircularProgress,
+  Divider,
+  FormControlLabel,
   Grid,
   IconButton,
+  Link,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
   Paper,
+  Switch,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Typography,
-  Switch,
-  FormControlLabel,
-  Breadcrumbs,
-  Link,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  Divider,
-  Alert,
-  CircularProgress,
-  Badge
+  Typography
 } from '@mui/material';
-import {
-  ArrowBack as BackIcon,
-  Home as HomeIcon,
-  Refresh as RefreshIcon,
-  TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon,
-  Assessment as AssessmentIcon,
-  ShowChart as ShowChartIcon,
-  AccessTime as AccessTimeIcon,
-  CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon,
-  Search as SearchIcon,
-  Analytics as AnalyticsIcon
-} from '@mui/icons-material';
-import { styled } from '@mui/material/styles';
+import React, { useCallback, useEffect, useReducer, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import apiService from '../../../../../services/apiService';
+
 import ENDPOINTS from '../../../../../services/endpoints';
+import apiService from '../../../../../services/apiService';
+import cacheService from '../../../../../services/cacheService';
 import { getWsUrl } from '../../../../../config';
+import { styled } from '@mui/material/styles';
 import websocketService from '../../../../../services/websocketService'; // Import our professional WebSocket service
 
 // Styled Components
@@ -119,8 +121,13 @@ const initialState = {
   trades: [],
   scannerStats: {
     totalScanned: 0,
+    totalInstruments: 0,
+    remainingCount: 0,
     eligible: 0,
     notEligible: 0,
+    progressPercentage: 0,
+    totalEligibleFound: 0,
+    lastCycleDuration: 0,
   },
   scannerLogs: [],
   filters: {
@@ -153,9 +160,8 @@ const stateReducer = (state, action) => {
           totalProfitLoss: sessionData.total_profit || 0,
         },
         scannerStats: {
+          ...state.scannerStats,
           totalScanned: sessionData.total_instruments_scanned || 0,
-          eligible: Math.floor((sessionData.total_instruments_scanned || 0) * 0.1), // Estimate
-          notEligible: Math.floor((sessionData.total_instruments_scanned || 0) * 0.9), // Estimate
         },
         loading: { ...state.loading, sessionStats: false, scannerStats: false },
       };
@@ -196,7 +202,23 @@ const stateReducer = (state, action) => {
     case 'UPDATE_SCANNER_STATS':
       return {
         ...state,
-        scannerStats: { ...state.scannerStats, ...action.payload },
+        scannerStats: { 
+          ...state.scannerStats, 
+          ...action.payload,
+          // Handle function-based updates for incrementing counters
+          eligible: typeof action.payload.eligible === 'function' 
+            ? action.payload.eligible(state.scannerStats.eligible)
+            : action.payload.eligible !== undefined 
+            ? action.payload.eligible 
+            : state.scannerStats.eligible,
+          notEligible: state.scannerStats.totalScanned - (
+            typeof action.payload.eligible === 'function' 
+              ? action.payload.eligible(state.scannerStats.eligible)
+              : action.payload.eligible !== undefined 
+              ? action.payload.eligible 
+              : state.scannerStats.eligible
+          )
+        },
       };
     default:
       return state;
@@ -219,6 +241,17 @@ const useWebSocket = (sessionId, sessionData, dispatch) => {
 
   const getGroupName = (algorithmId, frequency) => {
     return `scanner_${algorithmId}_${frequency}`;
+  };
+
+  const getAlgorithmName = (algorithmId) => {
+    // Get algorithm name from cached session parameters
+    const sessionParameters = cacheService.getTradeSessionParams();
+    if (!sessionParameters || !sessionParameters.scanning_algorithms) {
+      return 'unknown';
+    }
+    
+    const algorithm = sessionParameters.scanning_algorithms.find(algo => algo.id === algorithmId);
+    return algorithm ? algorithm.name : 'unknown';
   };
 
   const getStepFromUpdateType = (updateType) => {
@@ -244,31 +277,90 @@ const useWebSocket = (sessionId, sessionData, dispatch) => {
   };
 
   const handleScannerUpdate = useCallback((data) => {
-    // Add scanner log entry
-    const logEntry = {
-      id: Date.now() + Math.random(),
-      timestamp: new Date(data.timestamp || new Date()),
-      instrument: data.symbol,
-      step: getStepFromUpdateType(data.update_type),
-      result: getResultFromUpdateType(data.update_type),
-      message: data.message
-    };
+    // Handle different types of scanner updates
+    if (data.update_type === 'instrument_eligible') {
+      // Add scanner log entry for eligible instrument
+      const logEntry = {
+        id: Date.now() + Math.random(),
+        timestamp: new Date(data.timestamp || new Date()),
+        instrument: data.symbol,
+        step: 'Eligibility Check',
+        result: 'ELIGIBLE',
+        message: `${data.symbol} - ${data.effective_trend} trend, R:R ${data.reward_risk_ratio?.toFixed(2)}, Action: ${data.required_action}`,
+        details: {
+          effectiveTrend: data.effective_trend,
+          rewardRiskRatio: data.reward_risk_ratio,
+          supportPrice: data.support_price,
+          resistancePrice: data.resistance_price,
+          marketPrice: data.market_price,
+          requiredAction: data.required_action,
+          volume: data.volume,
+          lastPrice: data.last_price
+        }
+      };
 
-    dispatch({ type: 'ADD_SCANNER_LOG', payload: logEntry });
-    dispatch({ type: 'SET_LAST_UPDATE', payload: new Date() });
-
-    // Update scanner stats based on update type
-    if (data.update_type === 'instrument_accepted') {
+      dispatch({ type: 'ADD_SCANNER_LOG', payload: logEntry });
+      
+      // Update scanner stats - increment eligible count
       dispatch({ 
         type: 'UPDATE_SCANNER_STATS', 
-        payload: { eligible: (prev) => prev + 1 } 
+        payload: { 
+          eligible: (prev) => (prev || 0) + 1,
+          totalEligibleFound: data.eligible_count
+        } 
       });
-    } else if (data.update_type === 'instrument_rejected') {
+      
+    } else if (data.update_type === 'progress_update') {
+      // Update scanning progress
       dispatch({ 
         type: 'UPDATE_SCANNER_STATS', 
-        payload: { notEligible: (prev) => prev + 1 } 
+        payload: { 
+          totalScanned: data.total_scanned,
+          remainingCount: data.remaining_count,
+          progressPercentage: data.progress_percentage,
+          totalInstruments: data.total_instruments
+        } 
       });
+      
+      // Add progress log entry
+      const logEntry = {
+        id: Date.now() + Math.random(),
+        timestamp: new Date(data.timestamp || new Date()),
+        instrument: 'Progress Update',
+        step: 'Scanning Progress',
+        result: 'INFO',
+        message: `Scanned ${data.total_scanned}/${data.total_instruments} (${data.progress_percentage}%) - ${data.eligible_found} eligible found`
+      };
+
+      dispatch({ type: 'ADD_SCANNER_LOG', payload: logEntry });
+      
+    } else if (data.update_type === 'cycle_completed') {
+      // Handle cycle completion
+      dispatch({ 
+        type: 'UPDATE_SCANNER_STATS', 
+        payload: { 
+          totalScanned: data.total_scanned,
+          remainingCount: 0,
+          progressPercentage: 100,
+          totalInstruments: data.total_instruments,
+          lastCycleDuration: data.cycle_duration
+        } 
+      });
+      
+      // Add cycle completion log entry
+      const logEntry = {
+        id: Date.now() + Math.random(),
+        timestamp: new Date(data.timestamp || new Date()),
+        instrument: 'Scan Cycle',
+        step: 'Cycle Completed',
+        result: 'COMPLETED',
+        message: `Cycle ${data.cycle_number} completed - ${data.eligible_found} eligible instruments found in ${data.cycle_duration?.toFixed(1)}s`
+      };
+
+      dispatch({ type: 'ADD_SCANNER_LOG', payload: logEntry });
     }
+
+    dispatch({ type: 'SET_LAST_UPDATE', payload: new Date() });
   }, [dispatch]);
 
   const handleTradeUpdate = useCallback((data) => {
@@ -327,7 +419,7 @@ const useWebSocket = (sessionId, sessionData, dispatch) => {
     const checkConnectionAndSubscribe = () => {
       if (websocketService.getConnectionStatus() && !isSubscribedRef.current) {
         // Subscribe to scanner group for this algorithm and frequency
-        const algorithmId = sessionData.scanning_algorithm_id;
+        const algorithmId = getAlgorithmName(sessionData.scanning_algorithm_id);
         const frequency = sessionData.trading_frequency;
         const groupName = getGroupName(algorithmId, frequency);
 
@@ -367,7 +459,7 @@ const useWebSocket = (sessionId, sessionData, dispatch) => {
     if (websocketService.getConnectionStatus() && sessionData && isSubscribedRef.current) {
       const unsubscribeMessage = {
         action: 'unsubscribe_scanner',
-        algorithm_id: sessionData.scanning_algorithm_id,
+        algorithm_id: getAlgorithmName(sessionData.scanning_algorithm_id),
         frequency: sessionData.trading_frequency
       };
       websocketService.send(unsubscribeMessage);
@@ -694,27 +786,57 @@ const ScannerSection = ({ scannerStats, scannerLogs, loading, wsConnected }) => 
             <SearchIcon />
             Live Scanner
           </Typography>
-          <Chip 
-            label={wsConnected ? 'CONNECTED' : 'DISCONNECTED'}
-            size="small"
-            color={wsConnected ? 'success' : 'error'}
-            variant="filled"
-          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Chip 
+              label={wsConnected ? 'CONNECTED' : 'DISCONNECTED'}
+              size="small"
+              color={wsConnected ? 'success' : 'error'}
+              variant="filled"
+            />
+            {scannerStats.progressPercentage > 0 && scannerStats.progressPercentage < 100 && (
+              <Chip 
+                label={`${scannerStats.progressPercentage}% Complete`}
+                size="small"
+                color="info"
+                variant="outlined"
+              />
+            )}
+          </Box>
         </Box>
         
         {/* Scanner Stats */}
         <Grid container spacing={2} sx={{ mb: 3 }}>
-          <Grid item xs={4}>
+          <Grid item xs={3}>
             <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
               <Typography variant="h5" color="primary.main" fontWeight="600">
                 {loading ? <CircularProgress size={24} /> : scannerStats.totalScanned}
+                {scannerStats.totalInstruments > 0 && (
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    of {scannerStats.totalInstruments}
+                  </Typography>
+                )}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Total Scanned
+                Scanned
+              </Typography>
+              {scannerStats.progressPercentage > 0 && (
+                <Typography variant="caption" color="info.main">
+                  {scannerStats.progressPercentage}%
+                </Typography>
+              )}
+            </Box>
+          </Grid>
+          <Grid item xs={3}>
+            <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
+              <Typography variant="h5" color="warning.main" fontWeight="600">
+                {loading ? <CircularProgress size={24} /> : scannerStats.remainingCount}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Remaining
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={4}>
+          <Grid item xs={3}>
             <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
               <Typography variant="h5" color="success.main" fontWeight="600">
                 {loading ? <CircularProgress size={24} /> : scannerStats.eligible}
@@ -724,7 +846,7 @@ const ScannerSection = ({ scannerStats, scannerLogs, loading, wsConnected }) => 
               </Typography>
             </Box>
           </Grid>
-          <Grid item xs={4}>
+          <Grid item xs={3}>
             <Box sx={{ textAlign: 'center', p: 2, backgroundColor: 'grey.50', borderRadius: 1 }}>
               <Typography variant="h5" color="error.main" fontWeight="600">
                 {loading ? <CircularProgress size={24} /> : scannerStats.notEligible}
@@ -732,6 +854,11 @@ const ScannerSection = ({ scannerStats, scannerLogs, loading, wsConnected }) => 
               <Typography variant="body2" color="text.secondary">
                 Not Eligible
               </Typography>
+              {scannerStats.lastCycleDuration > 0 && (
+                <Typography variant="caption" color="text.secondary" display="block">
+                  Last: {scannerStats.lastCycleDuration.toFixed(1)}s
+                </Typography>
+              )}
             </Box>
           </Grid>
         </Grid>
@@ -741,7 +868,7 @@ const ScannerSection = ({ scannerStats, scannerLogs, loading, wsConnected }) => 
         {/* Scanner Logs */}
         <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <AnalyticsIcon />
-          Live Scanner Logs
+          Live Scanner Events
           <Badge badgeContent={scannerLogs.length} color="primary" />
         </Typography>
         
@@ -756,27 +883,47 @@ const ScannerSection = ({ scannerStats, scannerLogs, loading, wsConnected }) => 
           ) : (
             <List dense>
               {scannerLogs.map((log) => (
-                <ListItem key={log.id} sx={{ py: 0.5 }}>
-                  <ListItemIcon>
-                    {log.result === 'Passed' ? (
-                      <CheckCircleIcon color="success" fontSize="small" />
-                    ) : (
-                      <CancelIcon color="error" fontSize="small" />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={
-                      <Typography variant="body2">
-                        <strong>{log.instrument}</strong> - {log.step}: {log.result}
-                        {log.message && (
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            {log.message}
+                <ListItem key={log.id} sx={{ py: 0.5, flexDirection: 'column', alignItems: 'flex-start' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                    <ListItemIcon sx={{ minWidth: 36 }}>
+                      {log.result === 'ELIGIBLE' ? (
+                        <CheckCircleIcon color="success" fontSize="small" />
+                      ) : log.result === 'COMPLETED' ? (
+                        <AnalyticsIcon color="info" fontSize="small" />
+                      ) : log.result === 'INFO' ? (
+                        <AccessTimeIcon color="primary" fontSize="small" />
+                      ) : (
+                        <CancelIcon color="error" fontSize="small" />
+                      )}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Typography variant="body2">
+                          <strong>{log.instrument}</strong> - {log.step}: {log.result}
+                        </Typography>
+                      }
+                      secondary={
+                        <Box>
+                          <Typography variant="caption" color="text.secondary">
+                            {new Date(log.timestamp).toLocaleTimeString()} - {log.message}
                           </Typography>
-                        )}
-                      </Typography>
-                    }
-                    secondary={new Date(log.timestamp).toLocaleTimeString()}
-                  />
+                          {log.details && (
+                            <Box sx={{ mt: 0.5, p: 1, backgroundColor: 'grey.100', borderRadius: 0.5 }}>
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                Trend: {log.details.effectiveTrend} | R:R: {log.details.rewardRiskRatio?.toFixed(2)} | 
+                                Action: {log.details.requiredAction} | Price: ${log.details.marketPrice?.toFixed(2)}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary" display="block">
+                                Support: ${log.details.supportPrice?.toFixed(2)} | 
+                                Resistance: ${log.details.resistancePrice?.toFixed(2)} | 
+                                Volume: {log.details.volume?.toLocaleString()}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      }
+                    />
+                  </Box>
                 </ListItem>
               ))}
             </List>
