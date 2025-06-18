@@ -1,4 +1,3 @@
-import React, { Component } from 'react';
 import {
   Box,
   Button,
@@ -7,9 +6,11 @@ import {
   DialogTitle,
   Typography
 } from '@mui/material';
+import React, { Component } from 'react';
+
+import ENDPOINTS from '../../../services/endpoints';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import TradeSessionForm from './TradeSessionForm';
-import ENDPOINTS from '../../../services/endpoints';
 import apiService from '../../../services/apiService';
 
 class CreateTradeSession extends Component {
@@ -38,11 +39,11 @@ class CreateTradeSession extends Component {
   handleClose = () => this.setState({ modalOpen: false });
 
   initiateTradeSession = async (formData) => {
-    const { scanningAlgorithmId, initiationAlgorithmId, terminationAlgorithmId, tradingFrequency, isDummy } = formData;
+    const { scanningAlgorithmName, initiationAlgorithmName, terminationAlgorithmName, tradingFrequency, isDummy } = formData;
     const dummyValue = isDummy ? 1 : 0;
     
     try {
-      const url = `${ENDPOINTS.TRADE_SESSIONS.INITIATE}?trading_frequency=${tradingFrequency}&dummy=${dummyValue}&scanning_algorithm_id=${scanningAlgorithmId}&initiation_algorithm_id=${initiationAlgorithmId}&termination_algorithm_id=${terminationAlgorithmId}`;
+      const url = `${ENDPOINTS.TRADE_SESSIONS.INITIATE}?trading_frequency=${tradingFrequency}&dummy=${dummyValue}&scanning_algorithm_name=${scanningAlgorithmName}&initiation_algorithm_name=${initiationAlgorithmName}&termination_algorithm_name=${terminationAlgorithmName}`;
       const data = await apiService.get(url);
       
       // Show success message or handle success

@@ -58,9 +58,9 @@ class TradeSessionForm extends Component {
     super(props);
     this.state = {
       // Form data
-      scanningAlgorithmId: "",
-      initiationAlgorithmId: "",
-      terminationAlgorithmId: "",
+      scanningAlgorithmName: "",
+      initiationAlgorithmName: "",
+      terminationAlgorithmName: "",
       tradingFrequency: "",
       isDummy: true,
       
@@ -174,14 +174,14 @@ class TradeSessionForm extends Component {
     this.setState({ [field]: value });
   
     // Update description when an algorithm is selected
-    if (field === 'scanningAlgorithmId') {
-      const selectedAlgo = this.state.scanningOptions.find(algo => algo.id === value);
+    if (field === 'scanningAlgorithmName') {
+      const selectedAlgo = this.state.scanningOptions.find(algo => algo.name === value);
       this.setState({ scanningDescription: selectedAlgo?.description || "" });
-    } else if (field === 'initiationAlgorithmId') {
-      const selectedAlgo = this.state.initiationOptions.find(algo => algo.id === value);
+    } else if (field === 'initiationAlgorithmName') {
+      const selectedAlgo = this.state.initiationOptions.find(algo => algo.name === value);
       this.setState({ initiationDescription: selectedAlgo?.description || "" });
-    } else if (field === 'terminationAlgorithmId') {
-      const selectedAlgo = this.state.terminationOptions.find(algo => algo.id === value);
+    } else if (field === 'terminationAlgorithmName') {
+      const selectedAlgo = this.state.terminationOptions.find(algo => algo.name === value);
       this.setState({ terminationDescription: selectedAlgo?.description || "" });
     }
   };
@@ -194,15 +194,15 @@ class TradeSessionForm extends Component {
     event.preventDefault();
     
     const { 
-      scanningAlgorithmId, 
-      initiationAlgorithmId, 
-      terminationAlgorithmId, 
+      scanningAlgorithmName, 
+      initiationAlgorithmName, 
+      terminationAlgorithmName, 
       tradingFrequency, 
       isDummy 
     } = this.state;
 
     // Validation
-    if (!scanningAlgorithmId || !initiationAlgorithmId || !terminationAlgorithmId || !tradingFrequency) {
+    if (!scanningAlgorithmName || !initiationAlgorithmName || !terminationAlgorithmName || !tradingFrequency) {
       this.setState({ error: "Please fill in all required fields." });
       return;
     }
@@ -212,9 +212,9 @@ class TradeSessionForm extends Component {
     try {
       // Prepare form data for submission
       const formData = {
-        scanningAlgorithmId,
-        initiationAlgorithmId,
-        terminationAlgorithmId,
+        scanningAlgorithmName,
+        initiationAlgorithmName,
+        terminationAlgorithmName,
         tradingFrequency,
         isDummy
       };
@@ -224,9 +224,9 @@ class TradeSessionForm extends Component {
       
       // Reset form on successful submission
       this.setState({
-        scanningAlgorithmId: "",
-        initiationAlgorithmId: "",
-        terminationAlgorithmId: "",
+        scanningAlgorithmName: "",
+        initiationAlgorithmName: "",
+        terminationAlgorithmName: "",
         tradingFrequency: "",
         scanningDescription: "",
         initiationDescription: "",
@@ -259,7 +259,7 @@ class TradeSessionForm extends Component {
             label={label}
           >
             {options.map((option) => (
-              <MenuItem key={option.id || option.value} value={option.id || option.value}>
+              <MenuItem key={option.id || option.value} value={option.name || option.value}>
                 <Box>
                   <Typography variant="body2" fontWeight="600">
                     {option.displayName || option.label}
@@ -366,7 +366,7 @@ class TradeSessionForm extends Component {
         {/* Algorithm Selection */}
         {this.renderFormField(
           "Scanning Algorithm",
-          "scanningAlgorithmId",
+          "scanningAlgorithmName",
           scanningOptions,
           scanningDescription,
           true,
@@ -377,7 +377,7 @@ class TradeSessionForm extends Component {
 
         {this.renderFormField(
           "Initiation Algorithm", 
-          "initiationAlgorithmId",
+          "initiationAlgorithmName",
           initiationOptions,
           initiationDescription,
           true,
@@ -388,7 +388,7 @@ class TradeSessionForm extends Component {
 
         {this.renderFormField(
           "Termination Algorithm",
-          "terminationAlgorithmId", 
+          "terminationAlgorithmName", 
           terminationOptions,
           terminationDescription,
           true,

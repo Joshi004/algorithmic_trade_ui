@@ -425,7 +425,7 @@ const useWebSocket = (sessionId, sessionData, dispatch) => {
 
         const subscribeMessage = {
           action: 'subscribe_scanner',
-          algorithm_id: algorithmId,
+          algorithm_name: algorithmId,
           frequency: frequency
         };
 
@@ -459,7 +459,7 @@ const useWebSocket = (sessionId, sessionData, dispatch) => {
     if (websocketService.getConnectionStatus() && sessionData && isSubscribedRef.current) {
       const unsubscribeMessage = {
         action: 'unsubscribe_scanner',
-        algorithm_id: getAlgorithmName(sessionData.scanning_algorithm_id),
+        algorithm_name: getAlgorithmName(sessionData.scanning_algorithm_id),
         frequency: sessionData.trading_frequency
       };
       websocketService.send(unsubscribeMessage);
