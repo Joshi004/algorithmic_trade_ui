@@ -1,7 +1,13 @@
 import {
   Alert,
   Box,
+  Button,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Fade,
   Skeleton,
   Typography
@@ -10,8 +16,10 @@ import React, { Component } from 'react';
 
 import ENDPOINTS from '../../../services/endpoints';
 import TradeSession from './TradeSession/TradeSession';
+import TradeSessionService from '../../../services/tradeSessionService';
 import apiService from '../../../services/apiService';
 import { styled } from '@mui/material/styles';
+import toastService from '../../../services/toastService';
 
 const ListContainer = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(3),
@@ -34,6 +42,13 @@ class TradeSessionList extends Component {
       loading: true,
       error: null,
       refreshing: false,
+      confirmDialog: {
+        open: false,
+        action: null,
+        sessionId: null,
+        sessionName: null
+      },
+      actionLoading: false
     };
   }
 
@@ -57,8 +72,8 @@ class TradeSessionList extends Component {
     try {
       this.setState({ loading: true, error: null });
       
-      // Use real API endpoint for user trade sessions
-      const response = await apiService.get(ENDPOINTS.TRADE_SESSIONS.GET_ALL);
+      // Use TradeSessionService for API calls
+      const response = await TradeSessionService.getUserTradeSessions();
       
       // Extract sessions data from response
       const sessionsData = response?.data || [];
@@ -70,7 +85,6 @@ class TradeSessionList extends Component {
     } catch (error) {
       console.error('Error fetching trade sessions:', error);
       
-      // Show error message instead of using mock data
       this.setState({
         tradeSessions: [],
         loading: false,
@@ -80,27 +94,51 @@ class TradeSessionList extends Component {
   };
 
   handleSessionAction = async (action, sessionId) => {
+    const session = this.state.tradeSessions.find(s => s.id === sessionId);
+    const sessionName = session ? `Session #${sessionId}` : `Session #${sessionId}`;
+
+    // Show confirmation dialog for pause action
+    if (action === 'pause') {
+      this.setState({
+        confirmDialog: {
+          open: true,
+          action: action,
+          sessionId: sessionId,
+          sessionName: sessionName
+        }
+      });
+      return;
+    }
+
+    // For other actions, execute directly
+    this.executeSessionAction(action, sessionId, sessionName);
+  };
+
+  executeSessionAction = async (action, sessionId, sessionName) => {
     try {
-      this.setState({ refreshing: true });
+      this.setState({ actionLoading: true, refreshing: true });
       
-      let endpoint;
+      let response;
       switch (action) {
         case 'pause':
-          endpoint = `${ENDPOINTS.TRADE_SESSIONS.PAUSE}/${sessionId}`;
+          response = await TradeSessionService.pauseTradeSession(sessionId);
+          toastService.success(`${sessionName} paused successfully. No further scanning will occur until resumed.`);
           break;
         case 'resume':
-          endpoint = `${ENDPOINTS.TRADE_SESSIONS.RESUME}/${sessionId}`;
+          response = await TradeSessionService.resumeTradeSession(sessionId);
+          toastService.success(`${sessionName} resumed successfully. Scanning will now continue.`);
           break;
         case 'stop':
-          endpoint = `${ENDPOINTS.TRADE_SESSIONS.TERMINATE}/${sessionId}`;
-          break;
+          // TODO: Implement stop functionality when API is available
+          console.log(`Stop action not yet implemented for session ${sessionId}`);
+          toastService.info('Stop functionality is not yet implemented.');
+          this.setState({ actionLoading: false, refreshing: false });
+          return;
         default:
           throw new Error(`Unknown action: ${action}`);
       }
 
-      // Call the real API endpoint
-      console.log(`Calling ${action} API for session ${sessionId}`);
-      await apiService.post(endpoint);
+      console.log(`${action} action completed for session ${sessionId}:`, response);
       
       // Refresh the sessions list after successful action
       await this.fetchTradeSessions();
@@ -108,15 +146,41 @@ class TradeSessionList extends Component {
     } catch (error) {
       console.error(`Error performing ${action} on session ${sessionId}:`, error);
       
-      // For now, update local state as fallback if API fails
+      // Extract error message from response
+      const errorMessage = error.response?.data?.error || error.message || `Failed to ${action} session`;
+      toastService.error(`Error: ${errorMessage}`);
+      
+      // Update local state as fallback if API fails
       this.updateSessionStatusLocally(sessionId, action);
       
-      this.setState({ 
-        error: `Warning: ${action} action may not be fully processed. Please refresh to verify.`,
-      });
     } finally {
-      this.setState({ refreshing: false });
+      this.setState({ 
+        actionLoading: false,
+        refreshing: false,
+        confirmDialog: {
+          open: false,
+          action: null,
+          sessionId: null,
+          sessionName: null
+        }
+      });
     }
+  };
+
+  handleConfirmAction = () => {
+    const { action, sessionId, sessionName } = this.state.confirmDialog;
+    this.executeSessionAction(action, sessionId, sessionName);
+  };
+
+  handleCancelAction = () => {
+    this.setState({
+      confirmDialog: {
+        open: false,
+        action: null,
+        sessionId: null,
+        sessionName: null
+      }
+    });
   };
 
   updateSessionStatusLocally = (sessionId, action) => {
@@ -124,17 +188,21 @@ class TradeSessionList extends Component {
       tradeSessions: prevState.tradeSessions.map(session => {
         if (session.id === sessionId) {
           let newStatus = session.status;
+          let newIsActive = session.is_active;
           let newClosedAt = session.closed_at;
           
           switch (action) {
             case 'pause':
               newStatus = 'paused';
+              newIsActive = false;
               break;
             case 'resume':
               newStatus = 'started';
+              newIsActive = true;
               break;
             case 'stop':
               newStatus = 'stopped';
+              newIsActive = false;
               newClosedAt = new Date().toISOString();
               break;
             default:
@@ -144,6 +212,7 @@ class TradeSessionList extends Component {
           return {
             ...session,
             status: newStatus,
+            is_active: newIsActive,
             closed_at: newClosedAt,
           };
         }
@@ -161,6 +230,51 @@ class TradeSessionList extends Component {
           : session
       )
     }));
+  };
+
+  renderConfirmationDialog = () => {
+    const { confirmDialog } = this.state;
+    const { open, action, sessionName } = confirmDialog;
+
+    if (action !== 'pause') return null;
+
+    return (
+      <Dialog
+        open={open}
+        onClose={this.handleCancelAction}
+        aria-labelledby="confirm-pause-dialog-title"
+        aria-describedby="confirm-pause-dialog-description"
+      >
+        <DialogTitle id="confirm-pause-dialog-title">
+          Pause Trade Session
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="confirm-pause-dialog-description">
+            Are you sure you want to pause {sessionName}?
+            <br /><br />
+            <strong>What happens when you pause:</strong>
+            <br />
+            • No new instruments will be scanned for this session
+            • No new trades will be initiated
+            • Active trades will not be terminated
+            • The session can be resumed later
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={this.handleCancelAction}>
+            Cancel
+          </Button>
+          <Button 
+            onClick={this.handleConfirmAction} 
+            variant="contained" 
+            color="warning"
+            disabled={this.state.actionLoading}
+          >
+            {this.state.actionLoading ? 'Pausing...' : 'Pause Session'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
   };
 
   renderSkeletonLoading = () => {
@@ -260,6 +374,8 @@ class TradeSessionList extends Component {
             )}
           </>
         )}
+
+        {this.renderConfirmationDialog()}
       </ListContainer>
     );
   }

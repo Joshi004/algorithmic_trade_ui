@@ -1,10 +1,9 @@
-import React from 'react';
 import { Box } from '@mui/material';
-import TradeManagementHeader from './TradeManagementHeader/TradeManagementHeader';
 import CreateTradeSession from './CreateTradeSession/CreateTradeSession';
+import React from 'react';
+import TradeManagementHeader from './TradeManagementHeader/TradeManagementHeader';
 import TradeSessionList from './TradeSessionList/TradeSessionList';
-import ENDPOINTS from '../../services/endpoints';
-import apiService from '../../services/apiService';
+import TradeSessionService from '../../services/tradeSessionService';
 import cacheService from '../../services/cacheService';
 
 class TradeManagement extends React.Component {
@@ -36,9 +35,9 @@ class TradeManagement extends React.Component {
         return;
       }
       
-      // Fetch from API if not cached
+      // Fetch from API if not cached - use TradeSessionService
       console.log("Fetching session parameters from API");
-      const data = await apiService.get(ENDPOINTS.TRADE_SESSIONS.GET_PARAMS);
+      const data = await TradeSessionService.getSessionParameterOptions();
       
       // Cache the response
       if (data && data.data) {

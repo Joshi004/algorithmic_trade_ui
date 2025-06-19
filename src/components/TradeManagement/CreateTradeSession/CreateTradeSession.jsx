@@ -8,10 +8,9 @@ import {
 } from '@mui/material';
 import React, { Component } from 'react';
 
-import ENDPOINTS from '../../../services/endpoints';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import TradeSessionForm from './TradeSessionForm';
-import apiService from '../../../services/apiService';
+import TradeSessionService from '../../../services/tradeSessionService';
 
 class CreateTradeSession extends Component {
   constructor(props) {
@@ -40,11 +39,18 @@ class CreateTradeSession extends Component {
 
   initiateTradeSession = async (formData) => {
     const { scanningAlgorithmName, initiationAlgorithmName, terminationAlgorithmName, tradingFrequency, isDummy } = formData;
-    const dummyValue = isDummy ? 1 : 0;
     
     try {
-      const url = `${ENDPOINTS.TRADE_SESSIONS.INITIATE}?trading_frequency=${tradingFrequency}&dummy=${dummyValue}&scanning_algorithm_name=${scanningAlgorithmName}&initiation_algorithm_name=${initiationAlgorithmName}&termination_algorithm_name=${terminationAlgorithmName}`;
-      const data = await apiService.get(url);
+      // Use TradeSessionService instead of direct API call
+      const sessionData = {
+        trading_frequency: tradingFrequency,
+        dummy: isDummy ? 1 : 0,
+        scanning_algorithm_name: scanningAlgorithmName,
+        initiation_algorithm_name: initiationAlgorithmName,
+        termination_algorithm_name: terminationAlgorithmName
+      };
+      
+      const data = await TradeSessionService.initiateTradeSession(sessionData);
       
       // Show success message or handle success
       console.log("Trade session created successfully:", data.trade_session_id);

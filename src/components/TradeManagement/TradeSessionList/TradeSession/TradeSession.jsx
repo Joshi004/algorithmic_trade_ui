@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
+
 import { Accordion } from '@mui/material';
-import { styled } from '@mui/material/styles';
-import TradeSessionSummary from './TradeSessionSummary/TradeSessionSummary';
 import TradeSessionDetails from './TradeSessionDetails/TradeSessionDetails';
-import ENDPOINTS from '../../../../services/endpoints';
-import apiService from '../../../../services/apiService';
+import TradeSessionService from '../../../../services/tradeSessionService';
+import TradeSessionSummary from './TradeSessionSummary/TradeSessionSummary';
+import { styled } from '@mui/material/styles';
 
 // Styled components
 const StyledAccordion = styled(Accordion)(({ theme, isdummy }) => ({
@@ -47,9 +47,8 @@ class TradeSession extends Component {
     this.setState({ loadingDetails: true, detailsError: null });
 
     try {
-      const response = await apiService.get(
-        `${ENDPOINTS.TRADE_SESSIONS.GET_DETAILS}?trade_session_id=${sessionId}`
-      );
+      // Use TradeSessionService instead of direct API call
+      const response = await TradeSessionService.getTradeSessionDetails(sessionId);
 
       // Extract session details from response (consistent with other API calls)
       const sessionData = response?.data || response;

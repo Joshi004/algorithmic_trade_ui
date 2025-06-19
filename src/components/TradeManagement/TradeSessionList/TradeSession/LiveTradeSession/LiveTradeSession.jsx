@@ -44,6 +44,7 @@ import React, { useCallback, useEffect, useReducer, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import ENDPOINTS from '../../../../../services/endpoints';
+import TradeSessionService from '../../../../../services/tradeSessionService'; // Import TradeSessionService
 import apiService from '../../../../../services/apiService';
 import cacheService from '../../../../../services/cacheService';
 import { getWsUrl } from '../../../../../config';
@@ -504,7 +505,8 @@ const useWebSocket = (sessionId, sessionData, dispatch) => {
 const apiServiceHelpers = {
   getTradeSessionDetails: async (sessionId) => {
     try {
-      const response = await apiService.get(`${ENDPOINTS.TRADE_SESSIONS.GET_DETAILS}?trade_session_id=${sessionId}`);
+      // Use TradeSessionService instead of direct API call
+              const response = await TradeSessionService.getTradeSessionDetails(sessionId);
       return response.data;
     } catch (error) {
       console.error('Error fetching trade session details:', error);
